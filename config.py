@@ -1,0 +1,39 @@
+from easydict import EasyDict
+
+__C = EasyDict()
+
+config = __C
+
+__C.USE_GPU_NMS = True
+__C.GPU_ID = 0
+
+
+
+__C.TRAIN = EasyDict()
+
+
+
+
+
+__C.TRAIN.LEARNING_RATE = 1e-4
+__C.TRAIN.MOMENTUM = 0.9
+__C.TRAIN.GAMMA = 0.1
+__C.TRAIN.STEPSIZE = 5e+5
+
+__C.TRAIN.RPN_NEGATIVE_OVERLAP = 0.3
+__C.TRAIN.RPN_POSITIVE_OVERLAP = 0.7
+
+__C.TRAIN.RPN_PRE_NMS_TOP_N = 12000
+__C.TRAIN.RPN_POST_NMS_TOP_N = 2000
+
+__C.TRAIN.RPN_NMS_THRESHOLD = 0.7
+__C.TRAIN.RPN_MIN_SIZE = 16
+
+__C.TRAIN.TARGET_SIZE = 600
+
+
+
+
+
+
+

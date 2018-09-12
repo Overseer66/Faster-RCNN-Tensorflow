@@ -1,31 +1,59 @@
 import numpy as np
 import tensorflow as tf
-from DeepBuilder.util import *
+from config import config as CONFIG
+from DeepBuilder.util import safe_append
+from generate_anchor import GenerateAnchor
+from bbox_transform import BBoxTransform
+
+def split_score_layer(input, shape, name='_SplitScore', layer_collector=None, param_collector=None):
+    input_shape = tf.shape(input)
+    l = tf.reshape(input, [input_shape[0], input_shape[1], input_shape[2], shape[0], shape[1]], name=name)
+    safe_append(layer_collector, l)
+
+    return l
 
 
-def anchor_layer(
+def combine_score_layer(input, shape, name='_CombineScore', layer_collector=None, param_collector=None):
+    input_shape = tf.shape(input)
+    l = tf.reshape(input, [input_shape[0], input_shape[1], input_shape[2], shape], name=name)
+    safe_append(layer_collector, l)
+
+    return l
+
+
+def anchor_target_layer(
         input,
         feature_stride,
         anchor_scales,
         name='_AnchorLayer',
         layer_collector=None,
-        param_collector=None,
-):
-    layers = tf.py_func(
-        _anchor_layer,
-        [input[0], input[1], input[2], feature_stride, anchor_scales,],
-        [tf.float32, tf.float32, tf.float32, tf.float32]
-    )
-    for layer in layers:
-        safe_append(layer_collector, layer)
+    ):
+    with tf.variable_scope(name) as scope:
+        layers = tf.py_func(
+            _anchor_target_layer,
+            [input[0], input[1], input[2], input[3], feature_stride, anchor_scales,],
+            [tf.float32, tf.float32, tf.float32, tf.float32]
+        )
+        for layer in layers:
+            safe_append(layer_collector, layer)
 
-    return layers
+        return layers
 
 
-def _anchor_layer(rpn_cls_score_layer, img_info, gt_boxes, feature_stride=[16,], anchor_scales=[8, 16, 32]):
+def _anchor_target_layer(
+    rpn_cls_score_layer,
+    img_info,
+    gt_boxes,
+    config_key,
+    feature_stride=[16,],
+    anchor_scales=[8, 16, 32]
+    ):
     img_info = img_info[0]
 
-    anchors = generate_anchor(scales=np.array(anchor_scales))
+    config_key = config_key.decode('utf-8')
+    config = CONFIG[config_key]
+
+    anchors = GenerateAnchor(scales=np.array(anchor_scales))
 
     height, width = rpn_cls_score_layer.shape[1:3]
 
@@ -49,7 +77,6 @@ def _anchor_layer(rpn_cls_score_layer, img_info, gt_boxes, feature_stride=[16,],
         (all_anchors[:, 3] < img_info[0] + allowed_border)   # Height
     )[0]
 
-    org_anchors = all_anchors
     all_anchors = all_anchors[inside_indices]
 
     labels = np.empty((len(inside_indices),), dtype=np.float32)
@@ -63,9 +90,9 @@ def _anchor_layer(rpn_cls_score_layer, img_info, gt_boxes, feature_stride=[16,],
     gt_max_overlaps = overlaps[gt_argmax_overlaps, np.arange(overlaps.shape[1])]
     gt_argmax_overlaps = np.where(overlaps==gt_max_overlaps)[0]
 
-    labels[max_overlaps < 0.3] = 0
+    labels[max_overlaps < config.RPN_NEGATIVE_OVERLAP] = 0
     labels[gt_argmax_overlaps] = 1
-    labels[max_overlaps >= 0.7] = 1
+    labels[max_overlaps >= config.RPN_POSITIVE_OVERLAP] = 1
 
     bbox_targets = ComputTargets(all_anchors, gt_boxes[argmax_overlaps, :])
 
@@ -105,51 +132,6 @@ def _anchor_layer(rpn_cls_score_layer, img_info, gt_boxes, feature_stride=[16,],
     return rpn_labels, rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights
 
 
-
-def generate_anchor(base_size=16, ratios=[0.5, 1, 2], scales=[8, 16, 32]):
-    base_anchor = np.array([1, 1, base_size, base_size]) - 1
-
-    w, h, x_ctr, y_ctr = Width_Height_Xctr_Yctr(base_anchor)
-    wh_size = w * h
-    size_ratios = wh_size / ratios
-
-    ws = np.round(np.sqrt(size_ratios))
-    hs = np.round(ws * ratios)
-    anchors = MakeAnchors(ws, hs, x_ctr, y_ctr)
-
-    anchors = np.vstack([AnchorScales(anchor, scales) for anchor in anchors])
-
-    return anchors
-
-def Width_Height_Xctr_Yctr(anchor):
-    w = anchor[2] - anchor[0] + 1
-    h = anchor[3] - anchor[1] + 1
-    x_ctr = anchor[0] + 0.5 * (w - 1)
-    y_ctr = anchor[1] + 0.5 * (h - 1)
-
-    return w, h, x_ctr, y_ctr
-
-def MakeAnchors(Widths, Heights, Xctr, Yctr):
-    Widths = Widths[:, np.newaxis]
-    Heights = Heights[:, np.newaxis]
-    anchors = np.hstack((
-        Xctr - 0.5 * (Widths - 1),
-        Yctr - 0.5 * (Heights - 1),
-        Xctr + 0.5 * (Widths - 1),
-        Yctr + 0.5 * (Heights - 1),
-    ))
-
-    return anchors
-
-def AnchorScales(anchor, scales):
-    w, h, x_ctr, y_ctr = Width_Height_Xctr_Yctr(anchor)
-    ws = w * scales
-    hs = h * scales
-    anchors = MakeAnchors(ws, hs, x_ctr, y_ctr)
-
-    return anchors
-
-
 def AnchorOverlaps(anchors, gt_boxes):
     A_size = len(anchors)
     K_size = len(gt_boxes)
@@ -178,27 +160,6 @@ def ComputTargets(ex_rois, gt_rois):
     assert gt_rois.shape[1] == 5
 
     return BBoxTransform(ex_rois, gt_rois[:, :4]).astype(np.float32, copy=False)
-
-
-def BBoxTransform(ex_rois, gt_rois):
-    ex_widths = ex_rois[:, 2] - ex_rois[:, 0] + 1.0
-    ex_heights = ex_rois[:, 3] - ex_rois[:, 1] + 1.0
-    ex_ctr_x = ex_rois[:, 0] + 0.5 * ex_widths
-    ex_ctr_y = ex_rois[:, 1] + 0.5 * ex_heights
-
-    gt_widths = gt_rois[:, 2] - gt_rois[:, 0] + 1.0
-    gt_heights = gt_rois[:, 3] - gt_rois[:, 1] + 1.0
-    gt_ctr_x = gt_rois[:, 0] + 0.5 * gt_widths
-    gt_ctr_y = gt_rois[:, 1] + 0.5 * gt_heights
-
-    targets_dx = (gt_ctr_x - ex_ctr_x) / ex_widths
-    targets_dy = (gt_ctr_y - ex_ctr_y) / ex_heights
-    targets_dw = np.log(gt_widths / ex_widths)
-    targets_dh = np.log(gt_heights / ex_heights)
-
-    targets = np.vstack(
-        (targets_dx, targets_dy, targets_dw, targets_dh)).transpose()
-    return targets
 
 
 def Unmap(data, count, indices, fill=0):
