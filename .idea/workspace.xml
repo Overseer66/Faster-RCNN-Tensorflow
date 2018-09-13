@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="a98fb053-5dad-4398-b567-9c355b8aed62" name="Default Changelist" comment="class indexing (0~19 -&gt; 1~20)" />
+    <list default="true" id="a98fb053-5dad-4398-b567-9c355b8aed62" name="Default Changelist" comment="또 변경" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -90,8 +90,8 @@
       <file leaf-file-name="importer.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/importer.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="449">
-              <caret line="33" column="79" lean-forward="true" selection-start-line="33" selection-start-column="79" selection-end-line="34" selection-end-column="78" />
+            <state relative-caret-position="839">
+              <caret line="82" column="36" lean-forward="true" selection-start-line="82" selection-start-column="36" selection-end-line="82" selection-end-column="36" />
               <folding>
                 <element signature="e#0#9#0" expanded="true" />
               </folding>
@@ -245,18 +245,25 @@
       <option name="project" value="LOCAL" />
       <updated>1536821472410</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="또 변경">
+      <created>1536821792472</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1536821792472</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="2625" y="1596" width="2495" height="1604" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.20280561" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.20280561" />
       <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
+      <window_info anchor="bottom" id="Event Log" order="10" sideWeight="0.5002004" side_tool="true" visible="true" weight="0.32931727" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.32941988" />
-      <window_info anchor="bottom" id="Version Control" order="11" weight="0.32954547" />
+      <window_info active="true" anchor="bottom" id="Version Control" order="11" sideWeight="0.4997996" visible="true" weight="0.32931727" />
       <window_info anchor="bottom" id="Python Console" order="12" weight="0.3299458" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Terminal" order="9" weight="0.3299458" />
@@ -282,7 +289,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="update" />
     <MESSAGE value="class indexing (0~19 -&gt; 1~20)" />
-    <option name="LAST_COMMIT_MESSAGE" value="class indexing (0~19 -&gt; 1~20)" />
+    <MESSAGE value="또 변경" />
+    <option name="LAST_COMMIT_MESSAGE" value="또 변경" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/model.py">
@@ -356,8 +364,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/importer.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="449">
-          <caret line="33" column="79" lean-forward="true" selection-start-line="33" selection-start-column="79" selection-end-line="34" selection-end-column="78" />
+        <state relative-caret-position="839">
+          <caret line="82" column="36" lean-forward="true" selection-start-line="82" selection-start-column="36" selection-end-line="82" selection-end-column="36" />
           <folding>
             <element signature="e#0#9#0" expanded="true" />
           </folding>
