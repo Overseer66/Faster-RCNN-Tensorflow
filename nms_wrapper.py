@@ -5,6 +5,9 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
+import pyximport
+pyximport.install()
+
 from config import config
 if config.USE_GPU_NMS:
     from nms.gpu_nms import gpu_nms

@@ -5,56 +5,77 @@ from config import config as CONFIG
 from DeepBuilder import layer, activation, build
 from anchor_layer import anchor_target_layer, split_score_layer, combine_score_layer
 from proposal_layer import proposal_layer
+from roi_layer import roi_pooling
 from importer import import_image_and_xml
 from importer import get_class_idx
 
 
 vgg16 = (
-    {'method': layer.conv_2d, 'args': (), 'kwargs': {'kernel_size': [3, 3, -1, 64],}},
-    {'method': layer.conv_2d, 'args': (), 'kwargs': {'kernel_size': [3, 3, -1, 64],}},
-    {'method': layer.conv_2d, 'args': (), 'kwargs': {'kernel_size': [3, 3, -1, 64],}},
-    {'method': layer.max_pool, 'args': (), 'kwargs': {'padding': 'VALID',}},
-    {'method': layer.conv_2d, 'args': (), 'kwargs': {'kernel_size': [3, 3, -1, 128],}},
-    {'method': layer.conv_2d, 'args': (), 'kwargs': {'kernel_size': [3, 3, -1, 128],}},
-    {'method': layer.max_pool, 'args': (), 'kwargs': {'padding': 'VALID',}},
-    {'method': layer.conv_2d, 'args': (), 'kwargs': {'kernel_size': [3, 3, -1, 256],}},
-    {'method': layer.conv_2d, 'args': (), 'kwargs': {'kernel_size': [3, 3, -1, 256],}},
-    {'method': layer.conv_2d, 'args': (), 'kwargs': {'kernel_size': [3, 3, -1, 256],}},
-    {'method': layer.max_pool, 'args': (), 'kwargs': {'padding': 'VALID',}},
-    {'method': layer.conv_2d, 'args': (), 'kwargs': {'kernel_size': [3, 3, -1, 512],}},
-    {'method': layer.conv_2d, 'args': (), 'kwargs': {'kernel_size': [3, 3, -1, 512],}},
-    {'method': layer.conv_2d, 'args': (), 'kwargs': {'kernel_size': [3, 3, -1, 512],}},
-    {'method': layer.max_pool, 'args': (), 'kwargs': {'padding': 'VALID',}},
-    {'method': layer.conv_2d, 'args': (), 'kwargs': {'kernel_size': [3, 3, -1, 512],}},
-    {'method': layer.conv_2d, 'args': (), 'kwargs': {'kernel_size': [3, 3, -1, 512],}},
-    {'method': layer.conv_2d, 'args': (), 'kwargs': {'kernel_size': [3, 3, -1, 512],}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 64],}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 64],}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 64],}},
+    {'method': layer.max_pool, 'kwargs': {'padding': 'VALID',}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 128],}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 128],}},
+    {'method': layer.max_pool, 'kwargs': {'padding': 'VALID',}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 256],}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 256],}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 256],}},
+    {'method': layer.max_pool, 'kwargs': {'padding': 'VALID',}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 512],}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 512],}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 512],}},
+    {'method': layer.max_pool, 'kwargs': {'padding': 'VALID',}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 512],}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 512],}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 512],}},
 )
 
 anchor_scales = [8, 16, 32]
 
 rpn_conv = (
-    {'method': layer.conv_2d, 'args': (), 'kwargs': {'kernel_size': [3, 3, -1, 512],}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 512],}},
 )
 rpn_bbox = (
-    {'method': layer.conv_2d, 'args': (), 'kwargs': {'kernel_size': [1, 1, -1, len(anchor_scales)*3*4], 'padding': 'VALID', 'activation': None}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, len(anchor_scales)*3*4], 'padding': 'VALID', 'activation': None}},
 )
 rpn_score = (
-    {'method': layer.conv_2d, 'args': (), 'kwargs': {'kernel_size': [1, 1, -1, len(anchor_scales)*3*2], 'padding': 'VALID', 'activation': None}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, len(anchor_scales)*3*2], 'padding': 'VALID', 'activation': None}},
 )
 rpn_data = (
-    {'method': anchor_target_layer, 'args': (), 'kwargs': {'feature_stride': [16,], 'anchor_scales': [8, 16, 32]}},
+    {'method': anchor_target_layer, 'kwargs': {'feature_stride': [16,], 'anchor_scales': [8, 16, 32]}},
 )
 
 rpn_cls_prob = (
-    {'method': split_score_layer, 'args': (), 'kwargs': {'shape': [9, 2]}},
-    {'method': activation.Softmax, 'args': (), 'kwargs': {}},
-    {'method': combine_score_layer, 'args': (), 'kwargs': {'shape': 9*2}},
+    {'method': split_score_layer, 'kwargs': {'shape': [9, 2]}},
+    {'method': activation.Softmax},
+    {'method': combine_score_layer, 'kwargs': {'shape': 9*2}},
 )
 
 rpn_proposals = (
-    {'method': proposal_layer, 'args': (), 'kwargs': {'feature_stride': [16,], 'anchor_scales': [8, 16, 32]}},
+    {'method': proposal_layer, 'kwargs': {'feature_stride': [16,], 'anchor_scales': [8, 16, 32]}},
 )
 
+# proposal_target
+
+roi_pool = (
+    {'method': roi_pooling, 'kwargs': {'pooled_width': 7, 'pooled_height': 7, 'spatial_scale': 1.0/16}},
+    {'method': activation.Transpose, 'kwargs': {'permutation': [0, 3, 1, 2]}},
+    {'method': layer.flatten},
+    {'method': layer.fully_connected_layer, 'kwargs': {'output_size': 4096}},
+    {'method': activation.Dropout, 'kwargs': {'keep_prob': 0.5}},
+    {'method': layer.fully_connected_layer, 'kwargs': {'output_size': 4096}},
+    {'method': activation.Dropout, 'kwargs': {'keep_prob': 0.5}},
+)
+
+pred_score = (
+    {'method': layer.fully_connected_layer, 'kwargs': {'output_size': 21, 'activation': None}},
+    {'method': activation.Softmax}
+)
+
+pred_bbox = (
+    {'method': layer.fully_connected_layer, 'kwargs': {'output_size': 21*4, 'activation': None}}
+)
 
 
 if __name__ == '__main__':
@@ -112,7 +133,9 @@ if __name__ == '__main__':
     # gt_boxes[1, [0, 2]] = np.array([0.4, 0.6]) * img_wsize
     # gt_boxes[1, [1, 3]] = np.array([0.7, 0.8]) * img_hsize
 
-    sess = tf.InteractiveSession()
+    ConfigProto = tf.ConfigProto(allow_soft_placement=True)
+    ConfigProto.gpu_options.allow_growth = True
+    sess = tf.InteractiveSession(config=ConfigProto)
     tf.global_variables_initializer().run(session=sess)
     result = sess.run(
         [RPN_Proposals],
