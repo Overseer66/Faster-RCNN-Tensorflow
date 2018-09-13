@@ -4,7 +4,7 @@ import tensorflow as tf
 from config import config as CONFIG
 from DeepBuilder import layer, activation, build
 from anchor_layer import anchor_target_layer, split_score_layer, combine_score_layer
-from proposal_layer import proposal_layer
+from proposal_layer import proposal_layer, proposal_target_layer
 from roi_layer import roi_pooling
 from importer import import_image_and_xml
 from importer import get_class_idx
@@ -56,7 +56,9 @@ rpn_proposals = (
     {'method': proposal_layer, 'kwargs': {'feature_stride': [16,], 'anchor_scales': [8, 16, 32]}},
 )
 
-# proposal_target
+roi_data = (
+    {'method': proposal_target_layer, 'kwargs': {'n_classes': 21}},
+)
 
 roi_pool = (
     {'method': roi_pooling, 'kwargs': {'pooled_width': 7, 'pooled_height': 7, 'spatial_scale': 1.0/16}},
@@ -103,16 +105,15 @@ if __name__ == '__main__':
     _tensors, RPN_Data_Layers, RPN_Data_Params = RPN_Data_Builder([RPN_BBox_Score, ImageInfo, GroundTruth, 'TRAIN'], 'RPN_DATA')
     RPN_Labels, RPN_BBox_Targets, RPN_BBox_Inside_Weights, RPN_BBox_Outside_Weights = _tensors
 
-    RPN_CLS_Prob_Builder = build.Builder(rpn_cls_prob)
-    RPN_CLS_Prob, RPN_CLS_Prob_Layers, RPN_CLS_Prob_Params = RPN_CLS_Prob_Builder(RPN_BBox_Score, 'RPN_CLS_PROB')
-
     RPN_Proposals_Builder = build.Builder(rpn_proposals)
     RPN_Proposals, RPN_Proposals_Layer, RPN_Proposals_Params = RPN_Proposals_Builder([RPN_CLS_Prob, RPN_BBox, ImageInfo, 'TRAIN'], 'RPN_PROPOSALS')
 
+    ROI_Data_Builder = build.Builder(roi_data)
+    ROI_Data, ROI_Data_Layer, RPN_ROI_Data_Params = ROI_Data_Builder([RPN_Proposals, GroundTruth, 'TRAIN'], 'ROI_DATA')
 
     images, xmls = import_image_and_xml('./data/sample_jpg/', './data/sample_xml/')
 
-    img_idx = 2
+    img_idx = 3
     img = images[img_idx]
     img_wsize = img.shape[0]
     img_hsize = img.shape[1]
@@ -138,13 +139,15 @@ if __name__ == '__main__':
     sess = tf.InteractiveSession(config=ConfigProto)
     tf.global_variables_initializer().run(session=sess)
     result = sess.run(
-        [RPN_Proposals],
+        [ROI_Data],
         {
             Image: img,
             ImageInfo: img_info,
             GroundTruth: gt_boxes
         }
     )
+
+    # print([result[0][i].shape for i in range(len(result[0]))])
 
     pass
 
