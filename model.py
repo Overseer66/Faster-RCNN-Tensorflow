@@ -5,6 +5,8 @@ from config import config as CONFIG
 from DeepBuilder import layer, activation, build
 from anchor_layer import anchor_target_layer, split_score_layer, combine_score_layer
 from proposal_layer import proposal_layer
+from importer import import_image_and_xml
+from importer import get_class_idx
 
 
 vgg16 = (
@@ -86,18 +88,29 @@ if __name__ == '__main__':
     RPN_Proposals_Builder = build.Builder(rpn_proposals)
     RPN_Proposals, RPN_Proposals_Layer, RPN_Proposals_Params = RPN_Proposals_Builder([RPN_CLS_Prob, RPN_BBox, ImageInfo, 'TRAIN'], 'RPN_PROPOSALS')
 
-    img_wsize = 256
-    img_hsize = 256
-    img = np.random.rand(1, img_hsize, img_wsize, 3)
-    img_info = np.random.rand(1, 3)
-    img_info[:, 0] = img_hsize
-    img_info[:, 1] = img_wsize
-    img_info[:, 2] = CONFIG.TRAIN.TARGET_SIZE / min(img_wsize, img_hsize)
-    gt_boxes = np.random.rand(2, 5)
-    gt_boxes[0, [0, 2]] = np.array([0.2, 0.6]) * img_wsize # L R
-    gt_boxes[0, [1, 3]] = np.array([0.3, 0.8]) * img_hsize # T B
-    gt_boxes[1, [0, 2]] = np.array([0.4, 0.6]) * img_wsize
-    gt_boxes[1, [1, 3]] = np.array([0.7, 0.8]) * img_hsize
+
+    images, xmls = import_image_and_xml('./data/sample_jpg/', './data/sample_xml/')
+
+    img_idx = 2
+    img = images[img_idx]
+    img_wsize = img.shape[0]
+    img_hsize = img.shape[1]
+    img = [img]
+    img_info = np.array([[img_hsize, img_wsize, CONFIG.TRAIN.TARGET_SIZE/min(img_wsize, img_hsize)]])
+    gt_boxes = [xmls['boxes'][img_idx][0] + [get_class_idx(xmls['classes'][img_idx][0])]]
+
+    # img_wsize = 256
+    # img_hsize = 256
+    # img = np.random.rand(1, img_hsize, img_wsize, 3)
+    # img_info = np.random.rand(1, 3)
+    # img_info[:, 0] = img_hsize
+    # img_info[:, 1] = img_wsize
+    # img_info[:, 2] = CONFIG.TRAIN.TARGET_SIZE / min(img_wsize, img_hsize)
+    # gt_boxes = np.random.rand(2, 5)
+    # gt_boxes[0, [0, 2]] = np.array([0.2, 0.6]) * img_wsize # L R
+    # gt_boxes[0, [1, 3]] = np.array([0.3, 0.8]) * img_hsize # T B
+    # gt_boxes[1, [0, 2]] = np.array([0.4, 0.6]) * img_wsize
+    # gt_boxes[1, [1, 3]] = np.array([0.7, 0.8]) * img_hsize
 
     sess = tf.InteractiveSession()
     tf.global_variables_initializer().run(session=sess)
