@@ -4,6 +4,7 @@ from config import config as CONFIG
 from DeepBuilder.util import safe_append
 from generate_anchor import GenerateAnchor
 from bbox_transform import BBoxTransform
+from util import AnchorOverlaps
 
 def split_score_layer(input, shape, name='_SplitScore', layer_collector=None, param_collector=None):
     input_shape = tf.shape(input)
@@ -130,27 +131,6 @@ def _anchor_target_layer(
     rpn_bbox_outside_weights = bbox_outside_weights
 
     return rpn_labels, rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights
-
-
-def AnchorOverlaps(anchors, gt_boxes):
-    A_size = len(anchors)
-    K_size = len(gt_boxes)
-
-    overlaps = np.zeros((A_size, K_size), dtype=np.float32)
-    for k in range(K_size):
-        box_area = (
-            (gt_boxes[k, 2] - gt_boxes[k, 0] + 1) * # Width Size
-            (gt_boxes[k, 3] - gt_boxes[k, 1] + 1)   # Height Size
-        )
-        for a in range(A_size):
-            iw = min(anchors[a, 2], gt_boxes[k, 2]) - max(anchors[a, 0], gt_boxes[k, 0]) + 1
-            if iw > 0:
-                ih = min(anchors[a, 3], gt_boxes[k, 3]) - max(anchors[a, 1], gt_boxes[k, 1]) + 1
-                if ih > 0:
-                    ua = (anchors[a, 2] - anchors[a, 0] + 1) * (anchors[a, 3] - anchors[a, 1] + 1) + box_area - (iw * ih)
-
-                    overlaps[a, k] = iw * ih / ua
-    return overlaps
 
 
 def ComputTargets(ex_rois, gt_rois):
