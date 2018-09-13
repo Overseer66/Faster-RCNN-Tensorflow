@@ -18,8 +18,9 @@ def proposal_layer(
         l = tf.py_func(
             _proposal_layer,
             [input[0], input[1], input[2], input[3], feature_stride, anchor_scales,],
-            [tf.float32]
+            tf.float32
         )
+        l = tf.reshape(l, [-1, 5])
         safe_append(layer_collector, l)
 
         return l
@@ -54,8 +55,8 @@ def _proposal_layer(
     shift_x, shift_y = np.meshgrid(shift_x, shift_y)
     shifts = np.vstack((shift_x.ravel(), shift_y.ravel(), shift_x.ravel(), shift_y.ravel())).transpose()
 
-    A_size = len(anchors)
-    K_size = len(shifts)
+    A_size = anchors_size
+    K_size = shifts.shape[0]
     all_anchors = (anchors.reshape((1, A_size, 4)) + shifts.reshape((1, K_size, 4)).transpose((1, 0, 2)))
     all_anchors = all_anchors.reshape((K_size*A_size, 4))
     
