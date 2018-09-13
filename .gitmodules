@@ -1,3 +1,6 @@
 [submodule "DeepBuilder"]
 	path = DeepBuilder
 	url = https://github.com/Overseer66/DeepBuilder.git
+[submodule "roi-pooling"]
+	path = roi-pooling
+	url = https://github.com/deepsense-ai/roi-pooling.git
