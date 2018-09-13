@@ -80,4 +80,4 @@ def import_image_and_xml(img_path, xml_path):
 
 def get_class_idx(name):
     class_names = ['person','bird','cat','cow','dog','horse','sheep','aeroplane','bicycle','boat','bus','car','motorbike','train','bottle','chair','diningtable','pottedplant','sofa','tvmonitor']
-    return class_names.index(name)+1
+    return class_names.index(name)+3
