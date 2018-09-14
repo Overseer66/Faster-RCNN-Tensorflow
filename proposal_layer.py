@@ -6,7 +6,7 @@ from DeepBuilder.util import safe_append
 from generate_anchor import GenerateAnchor
 from bbox_transform import BBoxTransform
 from bbox_transform import BBoxTransformInverse
-# from nms_wrapper import nms
+from nms_wrapper import nms
 from util import ClipBoxes
 from util import AnchorOverlaps
 
@@ -78,11 +78,11 @@ def _proposal_layer(
     proposal_bboxes = proposal_bboxes[sorted_indices, :]
     scores = scores[sorted_indices]
 
-    # keep_indices = nms(np.hstack((proposal_bboxes, scores)), config.RPN_NMS_THRESHOLD)
-    # if config.RPN_POST_NMS_TOP_N > 0:
-    #     keep_indices = keep_indices[:config.RPN_POST_NMS_TOP_N]
-    # proposal_bboxes = proposal_bboxes[keep_indices, :]
-    # scores = scores[keep_indices]
+    keep_indices = nms(np.hstack((proposal_bboxes, scores)), config.RPN_NMS_THRESHOLD)
+    if config.RPN_POST_NMS_TOP_N > 0:
+        keep_indices = keep_indices[:config.RPN_POST_NMS_TOP_N]
+    proposal_bboxes = proposal_bboxes[keep_indices, :]
+    scores = scores[keep_indices]
 
     batch_indices = np.zeros((proposal_bboxes.shape[0], 1), dtype=np.float32)
     blob = np.hstack((batch_indices, proposal_bboxes.astype(np.float32, copy=False)))

@@ -4,6 +4,8 @@
 # Licensed under The MIT License [see LICENSE for details]
 # Written by Ross Girshick
 # --------------------------------------------------------
+import pyximport
+pyximport.install()
 
 from config import config
 if config.USE_GPU_NMS:
