@@ -6,8 +6,8 @@ from DeepBuilder import layer, activation, build
 from anchor_layer import anchor_target_layer, split_score_layer, combine_score_layer
 from proposal_layer import proposal_layer, proposal_target_layer
 from roi_layer import roi_pooling
-from importer import import_image_and_xml
-from importer import get_class_idx
+from data_importer import import_image_and_xml
+from data_importer import get_class_idx
 
 
 vgg16 = (
@@ -47,9 +47,9 @@ rpn_data = (
 )
 
 rpn_cls_prob = (
-    {'method': split_score_layer, 'kwargs': {'shape': [9, 2]}},
+    {'method': split_score_layer, 'kwargs': {'shape': 2}},
     {'method': activation.Softmax},
-    {'method': combine_score_layer, 'kwargs': {'shape': 9*2}},
+    {'method': combine_score_layer, 'kwargs': {'shape': len(anchor_scales)*3*2}},
 )
 
 rpn_proposals = (
@@ -76,7 +76,7 @@ pred_score = (
 )
 
 pred_bbox = (
-    {'method': layer.fully_connected_layer, 'kwargs': {'output_size': 21*4, 'activation': None}}
+    {'method': layer.fully_connected_layer, 'kwargs': {'output_size': 21*4, 'activation': None}},
 )
 
 
@@ -95,9 +95,6 @@ if __name__ == '__main__':
     RPN_BBox_Score_Builder = build.Builder(rpn_score)
     RPN_BBox_Score, RPN_BBox_Score_Layers, RPN_BBox_Score_Params = RPN_BBox_Score_Builder(RPN, 'RPN_BBOX_SCORE')
 
-    RPN_CLS_Prob_Builder = build.Builder(rpn_cls_prob)
-    RPN_CLS_Prob, RPN_CLS_Prob_Layers, RPN_CLS_Prob_Params = RPN_CLS_Prob_Builder(RPN_BBox_Score, 'RPN_CLS_PROB')
-
     ImageInfo = tf.placeholder(tf.float32, [None, 3])
     GroundTruth = tf.placeholder(tf.float32, [None, 5])
 
@@ -108,8 +105,21 @@ if __name__ == '__main__':
     RPN_Proposals_Builder = build.Builder(rpn_proposals)
     RPN_Proposals, RPN_Proposals_Layer, RPN_Proposals_Params = RPN_Proposals_Builder([RPN_CLS_Prob, RPN_BBox, ImageInfo, 'TRAIN'], 'RPN_PROPOSALS')
 
+<<<<<<< HEAD
     ROI_Data_Builder = build.Builder(roi_data)
     ROI_Data, ROI_Data_Layer, RPN_ROI_Data_Params = ROI_Data_Builder([RPN_Proposals, GroundTruth, 'TRAIN'], 'ROI_DATA')
+=======
+    # ROI Target Layer Build
+
+    ROI_Pool_Builder = build.Builder(roi_pool)
+    ROI_Pool, ROI_Pool_Layer, ROI_Pool_Params = ROI_Pool_Builder([VGG16_LastLayer, RPN_Proposals], 'ROI_POOLING')
+
+    Pred_Score_Builder = build.Builder(pred_score)
+    Pred_Score, Pred_Score_Layer, Pred_Score_Params = Pred_Score_Builder(ROI_Pool, 'PRED_SCORE')
+
+    Pred_BBox_Builder = build.Builder(pred_bbox)
+    Pred_BBox, Pred_BBox_Layer, Pred_BBox_Params = Pred_BBox_Builder(ROI_Pool, 'PRED_BBOX')
+>>>>>>> bc89b14ca8c63bab09c3d5c0c46267248985ab20
 
     images, xmls = import_image_and_xml('./data/sample_jpg/', './data/sample_xml/')
 
@@ -139,7 +149,11 @@ if __name__ == '__main__':
     sess = tf.InteractiveSession(config=ConfigProto)
     tf.global_variables_initializer().run(session=sess)
     result = sess.run(
+<<<<<<< HEAD
         [ROI_Data],
+=======
+        [Pred_Score, Pred_BBox],
+>>>>>>> bc89b14ca8c63bab09c3d5c0c46267248985ab20
         {
             Image: img,
             ImageInfo: img_info,
@@ -147,7 +161,10 @@ if __name__ == '__main__':
         }
     )
 
+<<<<<<< HEAD
     # print([result[0][i].shape for i in range(len(result[0]))])
+=======
+>>>>>>> bc89b14ca8c63bab09c3d5c0c46267248985ab20
 
     pass
 

@@ -8,7 +8,21 @@ from util import AnchorOverlaps
 
 def split_score_layer(input, shape, name='_SplitScore', layer_collector=None, param_collector=None):
     input_shape = tf.shape(input)
-    l = tf.reshape(input, [input_shape[0], input_shape[1], input_shape[2], shape[0], shape[1]], name=name)
+
+    l = tf.transpose(
+        tf.reshape(
+            tf.transpose(input, [0, 3, 1, 2]),
+            [
+                input_shape[0],
+                int(shape),
+                tf.cast(tf.cast(input_shape[1], tf.float32) * (tf.cast(input_shape[3], tf.float32) / tf.cast(shape, tf.float32)), tf.int32),
+                input_shape[2]
+            ]
+        ),
+        [0, 2, 3, 1],
+        name=name
+    )
+
     safe_append(layer_collector, l)
 
     return l
@@ -16,7 +30,21 @@ def split_score_layer(input, shape, name='_SplitScore', layer_collector=None, pa
 
 def combine_score_layer(input, shape, name='_CombineScore', layer_collector=None, param_collector=None):
     input_shape = tf.shape(input)
-    l = tf.reshape(input, [input_shape[0], input_shape[1], input_shape[2], shape], name=name)
+
+    l = tf.transpose(
+        tf.reshape(
+            tf.transpose(input,[0, 3, 1, 2]),
+            [
+                input_shape[0],
+                int(shape),
+                tf.cast(tf.cast(input_shape[1], tf.float32) / tf.cast(shape, tf.float32) * tf.cast(input_shape[3], tf.float32), tf.int32),
+                input_shape[2]
+            ]
+        ),
+        [0, 2, 3, 1],
+        name=name
+    )
+
     safe_append(layer_collector, l)
 
     return l
