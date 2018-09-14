@@ -134,7 +134,7 @@ if __name__ == '__main__':
     # images, xmls = import_image_and_xml('./data/sample_jpg/', './data/sample_xml/')
     # img_idx = 1
     # img = images[img_idx]
-    img_org = cv2.imread('data/sample_jpg/000456.jpg')
+    img_org = cv2.imread('data/sample_jpg/2007_000027.jpg')
     img = img_org
 
     img_wsize = img.shape[1]
@@ -154,19 +154,6 @@ if __name__ == '__main__':
     img = [img]
     img_info = np.array([[img_hsize, img_wsize, img_scale]])
     # gt_boxes = [xmls['boxes'][img_idx][0] + [get_class_idx(xmls['classes'][img_idx][0])]]
-
-    # img_wsize = 256
-    # img_hsize = 256
-    # img = np.random.rand(1, img_hsize, img_wsize, 3)
-    # img_info = np.random.rand(1, 3)
-    # img_info[:, 0] = img_hsize
-    # img_info[:, 1] = img_wsize
-    # img_info[:, 2] = CONFIG.TRAIN.TARGET_SIZE / min(img_wsize, img_hsize)
-    # gt_boxes = np.random.rand(2, 5)
-    # gt_boxes[0, [0, 2]] = np.array([0.2, 0.6]) * img_wsize # L R
-    # gt_boxes[0, [1, 3]] = np.array([0.3, 0.8]) * img_hsize # T B
-    # gt_boxes[1, [0, 2]] = np.array([0.4, 0.6]) * img_wsize
-    # gt_boxes[1, [1, 3]] = np.array([0.7, 0.8]) * img_hsize
 
     ConfigProto = tf.ConfigProto(allow_soft_placement=True)
     ConfigProto.gpu_options.allow_growth = True
