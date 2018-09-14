@@ -4,7 +4,7 @@ import tensorflow as tf
 from config import config as CONFIG
 from DeepBuilder import layer, activation, build
 from anchor_layer import anchor_target_layer, split_score_layer, combine_score_layer
-from proposal_layer import proposal_layer
+from proposal_layer import proposal_layer, proposal_target_layer
 from roi_layer import roi_pooling
 from data_importer import import_image_and_xml
 from data_importer import get_class_idx
@@ -56,7 +56,9 @@ rpn_proposals = (
     {'method': proposal_layer, 'kwargs': {'feature_stride': [16,], 'anchor_scales': [8, 16, 32]}},
 )
 
-# proposal_target
+roi_data = (
+    {'method': proposal_target_layer, 'kwargs': {'n_classes': 21}},
+)
 
 roi_pool = (
     {'method': roi_pooling, 'kwargs': {'pooled_width': 7, 'pooled_height': 7, 'spatial_scale': 1.0/16}},
@@ -107,7 +109,9 @@ RPN_CLS_Prob, RPN_CLS_Prob_Layers, RPN_CLS_Prob_Params = RPN_CLS_Prob_Builder(RP
 RPN_Proposals_Builder = build.Builder(rpn_proposals)
 RPN_Proposals, RPN_Proposals_Layer, RPN_Proposals_Params = RPN_Proposals_Builder([RPN_CLS_Prob, RPN_BBox, ImageInfo, 'TRAIN'], 'RPN_PROPOSALS')
 
-# ROI Target Layer Build
+ROI_Data_Builder = build.Builder(roi_data)
+ROI_Data, ROI_Data_Layer, RPN_ROI_Data_Params = ROI_Data_Builder([RPN_Proposals, GroundTruth, 'TRAIN'], 'ROI_DATA')
+
 
 ROI_Pool_Builder = build.Builder(roi_pool)
 ROI_Pool, ROI_Pool_Layer, ROI_Pool_Params = ROI_Pool_Builder([VGG16_LastLayer, RPN_Proposals], 'ROI_POOLING')
@@ -123,7 +127,7 @@ Pred_BBox, Pred_BBox_Layer, Pred_BBox_Params = Pred_BBox_Builder(ROI_Pool, 'PRED
 if __name__ == '__main__':
     images, xmls = import_image_and_xml('./data/sample_jpg/', './data/sample_xml/')
 
-    img_idx = 2
+    img_idx = 3
     img = images[img_idx]
     img_wsize = img.shape[0]
     img_hsize = img.shape[1]
@@ -149,7 +153,7 @@ if __name__ == '__main__':
     sess = tf.InteractiveSession(config=ConfigProto)
     tf.global_variables_initializer().run(session=sess)
     result = sess.run(
-        [Pred_Score, Pred_BBox],
+        [ROI_Data],
         {
             Image: img,
             ImageInfo: img_info,
