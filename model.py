@@ -105,10 +105,8 @@ if __name__ == '__main__':
     RPN_Proposals_Builder = build.Builder(rpn_proposals)
     RPN_Proposals, RPN_Proposals_Layer, RPN_Proposals_Params = RPN_Proposals_Builder([RPN_CLS_Prob, RPN_BBox, ImageInfo, 'TRAIN'], 'RPN_PROPOSALS')
 
-<<<<<<< HEAD
     ROI_Data_Builder = build.Builder(roi_data)
     ROI_Data, ROI_Data_Layer, RPN_ROI_Data_Params = ROI_Data_Builder([RPN_Proposals, GroundTruth, 'TRAIN'], 'ROI_DATA')
-=======
     # ROI Target Layer Build
 
     ROI_Pool_Builder = build.Builder(roi_pool)
@@ -119,7 +117,6 @@ if __name__ == '__main__':
 
     Pred_BBox_Builder = build.Builder(pred_bbox)
     Pred_BBox, Pred_BBox_Layer, Pred_BBox_Params = Pred_BBox_Builder(ROI_Pool, 'PRED_BBOX')
->>>>>>> bc89b14ca8c63bab09c3d5c0c46267248985ab20
 
     images, xmls = import_image_and_xml('./data/sample_jpg/', './data/sample_xml/')
 
@@ -149,11 +146,7 @@ if __name__ == '__main__':
     sess = tf.InteractiveSession(config=ConfigProto)
     tf.global_variables_initializer().run(session=sess)
     result = sess.run(
-<<<<<<< HEAD
         [ROI_Data],
-=======
-        [Pred_Score, Pred_BBox],
->>>>>>> bc89b14ca8c63bab09c3d5c0c46267248985ab20
         {
             Image: img,
             ImageInfo: img_info,
@@ -161,10 +154,6 @@ if __name__ == '__main__':
         }
     )
 
-<<<<<<< HEAD
-    # print([result[0][i].shape for i in range(len(result[0]))])
-=======
->>>>>>> bc89b14ca8c63bab09c3d5c0c46267248985ab20
 
     pass
 

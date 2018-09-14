@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="a98fb053-5dad-4398-b567-9c355b8aed62" name="Default Changelist" comment="proposal target layer">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DeepBuilder" beforeDir="false" afterPath="$PROJECT_DIR$/DeepBuilder" afterDir="false" />
-    </list>
+    <list default="true" id="a98fb053-5dad-4398-b567-9c355b8aed62" name="Default Changelist" comment="proposal target layer" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -84,8 +81,8 @@
       <file leaf-file-name="model.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="576">
-              <caret line="32" lean-forward="true" selection-start-line="32" selection-end-line="32" />
+            <state relative-caret-position="702">
+              <caret line="39" column="56" selection-start-line="39" selection-start-column="56" selection-end-line="39" selection-end-column="56" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -115,7 +112,7 @@
         <entry file="file://$PROJECT_DIR$/proposal_layer.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="2693">
-              <caret line="158" column="30" lean-forward="true" selection-start-line="158" selection-start-column="30" selection-end-line="158" selection-end-column="30" />
+              <caret line="159" column="30" lean-forward="true" selection-start-line="159" selection-start-column="30" selection-end-line="159" selection-end-column="30" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -326,12 +323,18 @@
       <option name="project" value="LOCAL" />
       <updated>1536836280179</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="proposal target layer">
+      <created>1536886671212</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1536886671212</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="2625" y="1596" width="2495" height="1604" extended-state="6" />
-    <editor active="true" />
+    <frame x="65" y="-4" width="2495" height="1604" extended-state="6" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.20280561" />
       <window_info anchor="bottom" id="TODO" order="6" />
@@ -583,7 +586,7 @@
     <entry file="file://$PROJECT_DIR$/proposal_layer.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2693">
-          <caret line="158" column="30" lean-forward="true" selection-start-line="158" selection-start-column="30" selection-end-line="158" selection-end-column="30" />
+          <caret line="159" column="30" lean-forward="true" selection-start-line="159" selection-start-column="30" selection-end-line="159" selection-end-column="30" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
@@ -592,8 +595,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="576">
-          <caret line="32" lean-forward="true" selection-start-line="32" selection-end-line="32" />
+        <state relative-caret-position="702">
+          <caret line="39" column="56" selection-start-line="39" selection-start-column="56" selection-end-line="39" selection-end-column="56" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
