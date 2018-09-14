@@ -6,7 +6,7 @@ from generate_anchor import GenerateAnchor
 from bbox_transform import BBoxTransform
 from util import AnchorOverlaps
 
-def split_score_layer(input, shape, name='_SplitScore', layer_collector=None, param_collector=None):
+def split_score_layer(input, shape, name='SplitScore', layer_collector=None, param_collector=None):
     input_shape = tf.shape(input)
 
     l = tf.transpose(
@@ -28,7 +28,7 @@ def split_score_layer(input, shape, name='_SplitScore', layer_collector=None, pa
     return l
 
 
-def combine_score_layer(input, shape, name='_CombineScore', layer_collector=None, param_collector=None):
+def combine_score_layer(input, shape, name='CombineScore', layer_collector=None, param_collector=None):
     input_shape = tf.shape(input)
 
     l = tf.transpose(
@@ -54,7 +54,7 @@ def anchor_target_layer(
         input,
         feature_stride,
         anchor_scales,
-        name='_AnchorLayer',
+        name='AnchorLayer',
         layer_collector=None,
     ):
     with tf.variable_scope(name) as scope:
