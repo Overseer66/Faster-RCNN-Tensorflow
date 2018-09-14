@@ -6,8 +6,8 @@ from DeepBuilder import layer, activation, build
 from anchor_layer import anchor_target_layer, split_score_layer, combine_score_layer
 from proposal_layer import proposal_layer
 from roi_layer import roi_pooling
-from importer import import_image_and_xml
-from importer import get_class_idx
+from data_importer import import_image_and_xml
+from data_importer import get_class_idx
 
 
 vgg16 = (
