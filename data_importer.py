@@ -65,8 +65,6 @@ def import_image_and_xml(img_path, xml_path):
                     gt_image_shape['height'] = int(re.search(r'\d+', row).group())
                 elif 'width' in row:
                     gt_image_shape['width'] = int(re.search(r'\d+', row).group())
-            #     gt_image_shape['width'] = int(re.search(r'\d+', gt_image_shape_rows[0]).group())
-            #     gt_image_shape['height'] = int(re.search(r'\d+', gt_image_shape_rows[1]).group())
 
             gt_classes_batch.append(gt_classes)
             gt_boxes_batch.append(gt_boxes)
