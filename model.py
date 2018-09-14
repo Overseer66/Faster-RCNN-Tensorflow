@@ -4,7 +4,8 @@ import tensorflow as tf
 from config import config as CONFIG
 from DeepBuilder import layer, activation, build
 from anchor_layer import anchor_target_layer, split_score_layer, combine_score_layer
-from proposal_layer import proposal_layer, proposal_target_layer
+from proposal_layer import proposal_layer
+from proposal_target_layer import proposal_target_layer
 from roi_layer import roi_pooling
 from data_importer import import_image_and_xml
 from data_importer import get_class_idx
@@ -45,21 +46,22 @@ rpn_score = (
 rpn_data = (
     {'method': anchor_target_layer, 'kwargs': {'feature_stride': [16,], 'anchor_scales': [8, 16, 32]}},
 )
-
 rpn_cls_prob = (
     {'method': split_score_layer, 'kwargs': {'shape': 2}},
     {'method': activation.Softmax},
     {'method': combine_score_layer, 'kwargs': {'shape': len(anchor_scales)*3*2}},
 )
-
 rpn_proposals = (
     {'method': proposal_layer, 'kwargs': {'feature_stride': [16,], 'anchor_scales': [8, 16, 32]}},
+    {'method': layer.reshape, 'kwargs': {'shape': [-1, 5]}},
 )
 
 roi_data = (
     {'method': proposal_target_layer, 'kwargs': {'n_classes': 21}},
 )
-
+roi_bbox = (
+    {'method': layer.reshape, 'kwargs': {'shape': [-1, 5]}},
+)
 roi_pool = (
     {'method': roi_pooling, 'kwargs': {'pooled_width': 7, 'pooled_height': 7, 'spatial_scale': 1.0/16}},
     {'method': activation.Transpose, 'kwargs': {'permutation': [0, 3, 1, 2]}},
@@ -74,23 +76,21 @@ pred_score = (
     {'method': layer.fully_connected_layer, 'kwargs': {'output_size': 21, 'activation': None}},
     {'method': activation.Softmax}
 )
-
 pred_bbox = (
     {'method': layer.fully_connected_layer, 'kwargs': {'output_size': 21*4, 'activation': None}},
 )
 
 
 
-
 Image = tf.placeholder(tf.float32, [None, None, None, 3])
 
-VGG16_Builder = build.Builder(vgg16) # In: Image, Out: VGG-LastLayer
+VGG16_Builder = build.Builder(vgg16)
 VGG16_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image, 'VGG16')
 
-RPN_Builder = build.Builder(rpn_conv) # << In: VGG-LastLayer, Out
+RPN_Builder = build.Builder(rpn_conv)
 RPN, RPN_Layers, RPN_Params = RPN_Builder(VGG16_LastLayer, 'RPN')
 
-RPN_BBox_Builder = build.Builder(rpn_bbox) # << RPN 
+RPN_BBox_Builder = build.Builder(rpn_bbox)
 RPN_BBox, RPN_BBox_Layers, RPN_BBox_Params = RPN_BBox_Builder(RPN, 'RPN_BBOX')
 
 RPN_BBox_Score_Builder = build.Builder(rpn_score)
@@ -110,11 +110,14 @@ RPN_Proposals_Builder = build.Builder(rpn_proposals)
 RPN_Proposals, RPN_Proposals_Layer, RPN_Proposals_Params = RPN_Proposals_Builder([RPN_CLS_Prob, RPN_BBox, ImageInfo, 'TRAIN'], 'RPN_PROPOSALS')
 
 ROI_Data_Builder = build.Builder(roi_data)
-ROI_Data, ROI_Data_Layer, RPN_ROI_Data_Params = ROI_Data_Builder([RPN_Proposals, GroundTruth, 'TRAIN'], 'ROI_DATA')
+_tensors, ROI_Data_Layer, RPN_ROI_Data_Params = ROI_Data_Builder([RPN_Proposals, GroundTruth, 'TRAIN'], 'ROI_DATA')
+ROI_BBox, ROI_Labels, ROI_BBox_Targets, ROI_BBox_Inside_Weights, ROI_BBox_Outside_Weights = _tensors
 
+ROI_BBox_Builder = build.Builder(roi_bbox)
+ROI_BBox, ROI_BBox_Layer, ROI_BBox_Params = ROI_BBox_Builder(ROI_BBox, 'ROI_BBOX')
 
 ROI_Pool_Builder = build.Builder(roi_pool)
-ROI_Pool, ROI_Pool_Layer, ROI_Pool_Params = ROI_Pool_Builder([VGG16_LastLayer, RPN_Proposals], 'ROI_POOLING')
+ROI_Pool, ROI_Pool_Layer, ROI_Pool_Params = ROI_Pool_Builder([VGG16_LastLayer, ROI_BBox], 'ROI_POOLING')
 
 Pred_Score_Builder = build.Builder(pred_score)
 Pred_Score, Pred_Score_Layer, Pred_Score_Params = Pred_Score_Builder(ROI_Pool, 'PRED_SCORE')
@@ -152,16 +155,15 @@ if __name__ == '__main__':
     ConfigProto.gpu_options.allow_growth = True
     sess = tf.InteractiveSession(config=ConfigProto)
     tf.global_variables_initializer().run(session=sess)
+
     result = sess.run(
-        [ROI_Data],
+        [ROI_Pool, Pred_BBox, Pred_Score],
         {
             Image: img,
             ImageInfo: img_info,
             GroundTruth: gt_boxes
         }
     )
-
-    # print([result[0][i].shape for i in range(len(result[0]))])
 
     pass
 
