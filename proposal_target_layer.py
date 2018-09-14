@@ -11,7 +11,7 @@ from util import AnchorOverlaps
 def proposal_target_layer(
         input,
         n_classes,
-        name='_ProposalTargetLayer',
+        name='ProposalTargetLayer',
         layer_collector=None,
     ):
     with tf.variable_scope(name) as scope:

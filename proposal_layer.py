@@ -14,7 +14,7 @@ def proposal_layer(
         input,
         feature_stride,
         anchor_scales,
-        name='_ProposalLayer',
+        name='ProposalLayer',
         layer_collector=None,
     ):
     with tf.variable_scope(name) as scope:

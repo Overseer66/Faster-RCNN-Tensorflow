@@ -1,3 +1,4 @@
+import numpy as np
 from easydict import EasyDict
 
 __C = EasyDict()
@@ -7,7 +8,7 @@ config = __C
 __C.USE_GPU_NMS = True
 __C.GPU_ID = 0
 
-
+__C.PIXEL_MEANS = np.array([[[102.9801, 115.9465, 122.7717]]])
 
 __C.TRAIN = EasyDict()
 
@@ -23,8 +24,8 @@ __C.TRAIN.STEPSIZE = 5e+5
 __C.TRAIN.RPN_NEGATIVE_OVERLAP = 0.3
 __C.TRAIN.RPN_POSITIVE_OVERLAP = 0.7
 
-__C.TRAIN.RPN_PRE_NMS_TOP_N = 12000
-__C.TRAIN.RPN_POST_NMS_TOP_N = 2000
+__C.TRAIN.RPN_PRE_NMS_TOP_N = 6000 # 12000
+__C.TRAIN.RPN_POST_NMS_TOP_N = 300 # 2000
 
 __C.TRAIN.RPN_NMS_THRESHOLD = 0.7
 __C.TRAIN.RPN_MIN_SIZE = 16
@@ -41,6 +42,11 @@ __C.TRAIN.BBOX_INSIDE_WEIGHTS = (1.0,1.0,1.0,1.0)
 
 
 
+__C.TEST = EasyDict()
+
+
+__C.TEST.RPN_PRE_NMS_TOP_N = 6000
+__C.TEST.RPN_POST_NMS_TOP_N = 300
 
 
 
