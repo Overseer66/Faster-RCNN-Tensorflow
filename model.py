@@ -99,17 +99,9 @@ RPN_BBox_Score, RPN_BBox_Score_Layers, RPN_BBox_Score_Params = RPN_BBox_Score_Bu
 ImageInfo = tf.placeholder(tf.float32, [None, 3])
 GroundTruth = tf.placeholder(tf.float32, [None, 5])
 
-<<<<<<< HEAD
 RPN_Data_Builder = build.Builder(rpn_data)
 _tensors, RPN_Data_Layers, RPN_Data_Params = RPN_Data_Builder([RPN_BBox_Score, ImageInfo, GroundTruth, 'TRAIN'], 'RPN_DATA')
 RPN_Labels, RPN_BBox_Targets, RPN_BBox_Inside_Weights, RPN_BBox_Outside_Weights = _tensors
-=======
-    RPN_CLS_Prob_Builder = build.Builder(rpn_cls_prob)
-    RPN_CLS_Prob, RPN_CLS_Prob_Layers, RPN_CLS_Prob_Params = RPN_CLS_Prob_Builder(RPN_BBox_Score, 'RPN_CLS_PROB')
-
-    ImageInfo = tf.placeholder(tf.float32, [None, 3])
-    GroundTruth = tf.placeholder(tf.float32, [None, 5])
->>>>>>> 4cec27d8ddef6330a32d0498980262da75bf1257
 
 RPN_CLS_Prob_Builder = build.Builder(rpn_cls_prob)
 RPN_CLS_Prob, RPN_CLS_Prob_Layers, RPN_CLS_Prob_Params = RPN_CLS_Prob_Builder(RPN_BBox_Score, 'RPN_CLS_PROB')
