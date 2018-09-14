@@ -78,45 +78,49 @@ pred_bbox = (
 )
 
 
+
+
+Image = tf.placeholder(tf.float32, [None, None, None, 3])
+
+VGG16_Builder = build.Builder(vgg16) # In: Image, Out: VGG-LastLayer
+VGG16_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image, 'VGG16')
+
+RPN_Builder = build.Builder(rpn_conv) # << In: VGG-LastLayer, Out
+RPN, RPN_Layers, RPN_Params = RPN_Builder(VGG16_LastLayer, 'RPN')
+
+RPN_BBox_Builder = build.Builder(rpn_bbox) # << RPN 
+RPN_BBox, RPN_BBox_Layers, RPN_BBox_Params = RPN_BBox_Builder(RPN, 'RPN_BBOX')
+
+RPN_BBox_Score_Builder = build.Builder(rpn_score)
+RPN_BBox_Score, RPN_BBox_Score_Layers, RPN_BBox_Score_Params = RPN_BBox_Score_Builder(RPN, 'RPN_BBOX_SCORE')
+
+ImageInfo = tf.placeholder(tf.float32, [None, 3])
+GroundTruth = tf.placeholder(tf.float32, [None, 5])
+
+RPN_Data_Builder = build.Builder(rpn_data)
+_tensors, RPN_Data_Layers, RPN_Data_Params = RPN_Data_Builder([RPN_BBox_Score, ImageInfo, GroundTruth, 'TRAIN'], 'RPN_DATA')
+RPN_Labels, RPN_BBox_Targets, RPN_BBox_Inside_Weights, RPN_BBox_Outside_Weights = _tensors
+
+RPN_CLS_Prob_Builder = build.Builder(rpn_cls_prob)
+RPN_CLS_Prob, RPN_CLS_Prob_Layers, RPN_CLS_Prob_Params = RPN_CLS_Prob_Builder(RPN_BBox_Score, 'RPN_CLS_PROB')
+
+RPN_Proposals_Builder = build.Builder(rpn_proposals)
+RPN_Proposals, RPN_Proposals_Layer, RPN_Proposals_Params = RPN_Proposals_Builder([RPN_CLS_Prob, RPN_BBox, ImageInfo, 'TRAIN'], 'RPN_PROPOSALS')
+
+# ROI Target Layer Build
+
+ROI_Pool_Builder = build.Builder(roi_pool)
+ROI_Pool, ROI_Pool_Layer, ROI_Pool_Params = ROI_Pool_Builder([VGG16_LastLayer, RPN_Proposals], 'ROI_POOLING')
+
+Pred_Score_Builder = build.Builder(pred_score)
+Pred_Score, Pred_Score_Layer, Pred_Score_Params = Pred_Score_Builder(ROI_Pool, 'PRED_SCORE')
+
+Pred_BBox_Builder = build.Builder(pred_bbox)
+Pred_BBox, Pred_BBox_Layer, Pred_BBox_Params = Pred_BBox_Builder(ROI_Pool, 'PRED_BBOX')
+
+
+
 if __name__ == '__main__':
-    Image = tf.placeholder(tf.float32, [None, None, None, 3])
-
-    VGG16_Builder = build.Builder(vgg16)
-    VGG16_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image, 'VGG16')
-
-    RPN_Builder = build.Builder(rpn_conv)
-    RPN, RPN_Layers, RPN_Params = RPN_Builder(VGG16_LastLayer, 'RPN')
-
-    RPN_BBox_Builder = build.Builder(rpn_bbox)
-    RPN_BBox, RPN_BBox_Layers, RPN_BBox_Params = RPN_BBox_Builder(RPN, 'RPN_BBOX')
-
-    RPN_BBox_Score_Builder = build.Builder(rpn_score)
-    RPN_BBox_Score, RPN_BBox_Score_Layers, RPN_BBox_Score_Params = RPN_BBox_Score_Builder(RPN, 'RPN_BBOX_SCORE')
-
-    ImageInfo = tf.placeholder(tf.float32, [None, 3])
-    GroundTruth = tf.placeholder(tf.float32, [None, 5])
-
-    RPN_Data_Builder = build.Builder(rpn_data)
-    _tensors, RPN_Data_Layers, RPN_Data_Params = RPN_Data_Builder([RPN_BBox_Score, ImageInfo, GroundTruth, 'TRAIN'], 'RPN_DATA')
-    RPN_Labels, RPN_BBox_Targets, RPN_BBox_Inside_Weights, RPN_BBox_Outside_Weights = _tensors
-
-    RPN_CLS_Prob_Builder = build.Builder(rpn_cls_prob)
-    RPN_CLS_Prob, RPN_CLS_Prob_Layers, RPN_CLS_Prob_Params = RPN_CLS_Prob_Builder(RPN_BBox_Score, 'RPN_CLS_PROB')
-
-    RPN_Proposals_Builder = build.Builder(rpn_proposals)
-    RPN_Proposals, RPN_Proposals_Layer, RPN_Proposals_Params = RPN_Proposals_Builder([RPN_CLS_Prob, RPN_BBox, ImageInfo, 'TRAIN'], 'RPN_PROPOSALS')
-
-    # ROI Target Layer Build
-
-    ROI_Pool_Builder = build.Builder(roi_pool)
-    ROI_Pool, ROI_Pool_Layer, ROI_Pool_Params = ROI_Pool_Builder([VGG16_LastLayer, RPN_Proposals], 'ROI_POOLING')
-
-    Pred_Score_Builder = build.Builder(pred_score)
-    Pred_Score, Pred_Score_Layer, Pred_Score_Params = Pred_Score_Builder(ROI_Pool, 'PRED_SCORE')
-
-    Pred_BBox_Builder = build.Builder(pred_bbox)
-    Pred_BBox, Pred_BBox_Layer, Pred_BBox_Params = Pred_BBox_Builder(ROI_Pool, 'PRED_BBOX')
-
     images, xmls = import_image_and_xml('./data/sample_jpg/', './data/sample_xml/')
 
     img_idx = 2
