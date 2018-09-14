@@ -95,6 +95,9 @@ if __name__ == '__main__':
     RPN_BBox_Score_Builder = build.Builder(rpn_score)
     RPN_BBox_Score, RPN_BBox_Score_Layers, RPN_BBox_Score_Params = RPN_BBox_Score_Builder(RPN, 'RPN_BBOX_SCORE')
 
+    RPN_CLS_Prob_Builder = build.Builder(rpn_cls_prob)
+    RPN_CLS_Prob, RPN_CLS_Prob_Layers, RPN_CLS_Prob_Params = RPN_CLS_Prob_Builder(RPN_BBox_Score, 'RPN_CLS_PROB')
+
     ImageInfo = tf.placeholder(tf.float32, [None, 3])
     GroundTruth = tf.placeholder(tf.float32, [None, 5])
 
@@ -154,6 +157,7 @@ if __name__ == '__main__':
         }
     )
 
+    # print([result[0][i].shape for i in range(len(result[0]))])
 
     pass
 
