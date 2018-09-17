@@ -1,0 +1,87 @@
+# rpn.py
+# rpn_conv = (
+#     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 512], 'name': 'rpn_conv/3x3'}},
+# )
+# rpn_bbox = (
+#     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, len(anchor_scales)*3*4], 'padding': 'VALID', 'activation': None, 'name': 'rpn_bbox_pred'}},
+# )
+# rpn_score = (
+#     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, len(anchor_scales)*3*2], 'padding': 'VALID', 'activation': None, 'name': 'rpn_cls_score'}},
+# )
+# rpn_data = (
+#     {'method': anchor_target_layer, 'kwargs': {'feature_stride': [16,], 'anchor_scales': [8, 16, 32]}},
+# )
+# rpn_cls_prob = (
+#     {'method': split_score_layer, 'kwargs': {'shape': 2}},
+#     {'method': activation.Softmax, 'kwargs': {'name': 'rpn_cls_prob'}},
+#     {'method': combine_score_layer, 'kwargs': {'shape': len(anchor_scales)*3*2}},
+# )
+# rpn_proposals = (
+#     {'method': proposal_layer, 'kwargs': {'feature_stride': [16,], 'anchor_scales': [8, 16, 32], 'name': 'rois'}},
+#     {'method': layer.reshape, 'kwargs': {'shape': [-1, 5]}},
+# )
+
+
+# roi.py
+# roi_data = (
+#     {'method': proposal_target_layer, 'kwargs': {'n_classes': n_classes}},
+# )
+# roi_bbox = (
+#     {'method': layer.reshape, 'kwargs': {'shape': [-1, 5]}},
+# )
+# roi_pool = (
+#     {'method': roi_pooling, 'kwargs': {'pooled_width': 7, 'pooled_height': 7, 'spatial_scale': 1.0/16}, 'name': 'pool_5'},
+#     {'method': activation.Transpose, 'kwargs': {'permutation': [0, 3, 1, 2]}},
+#     {'method': layer.flatten},
+#     {'method': layer.fully_connected_layer, 'kwargs': {'output_size': 4096, 'name': 'fc6'}},
+#     #{'method': activation.Dropout, 'kwargs': {'keep_prob': 0.5}},
+#     {'method': layer.fully_connected_layer, 'kwargs': {'output_size': 4096, 'name': 'fc7'}},
+#     #{'method': activation.Dropout, 'kwargs': {'keep_prob': 0.5}},
+# ) 
+
+# pred_score = (
+#     {'method': layer.fully_connected_layer, 'kwargs': {'output_size': n_classes, 'activation': None, 'name': 'cls_score'}},
+#     {'method': activation.Softmax, 'name': 'cls_prob'}
+# )
+# pred_bbox = (
+#     {'method': layer.fully_connected_layer, 'kwargs': {'output_size': n_classes*4, 'activation': None, 'name': 'bbox_pred'}},
+# )
+
+
+
+# test.py
+# RPN_Builder = build.Builder(rpn_conv)
+# RPN, RPN_Layers, RPN_Params = RPN_Builder(VGG16_LastLayer)
+
+# RPN_BBox_Builder = build.Builder(rpn_bbox)
+# RPN_BBox, RPN_BBox_Layers, RPN_BBox_Params = RPN_BBox_Builder(RPN)
+
+# RPN_BBox_Score_Builder = build.Builder(rpn_score)
+# RPN_BBox_Score, RPN_BBox_Score_Layers, RPN_BBox_Score_Params = RPN_BBox_Score_Builder(RPN)
+
+# RPN_Data_Builder = build.Builder(rpn_data)
+# _tensors, RPN_Data_Layers, RPN_Data_Params = RPN_Data_Builder([RPN_BBox_Score, ImageInfo, GroundTruth, 'TRAIN'])
+# RPN_Labels, RPN_BBox_Targets, RPN_BBox_Inside_Weights, RPN_BBox_Outside_Weights = _tensors
+
+# RPN_CLS_Prob_Builder = build.Builder(rpn_cls_prob)
+# RPN_CLS_Prob, RPN_CLS_Prob_Layers, RPN_CLS_Prob_Params = RPN_CLS_Prob_Builder(RPN_BBox_Score)
+
+# RPN_Proposals_Builder = build.Builder(rpn_proposals)
+# RPN_Proposals, RPN_Proposals_Layer, RPN_Proposals_Params = RPN_Proposals_Builder([RPN_CLS_Prob, RPN_BBox, ImageInfo, 'TRAIN'])
+
+# ROI_Data_Builder = build.Builder(roi_data)
+# _tensors, ROI_Data_Layer, RPN_ROI_Data_Params = ROI_Data_Builder([RPN_Proposal_BBoxes, GroundTruth, 'TRAIN'])
+# ROI_BBox, ROI_Labels, ROI_BBox_Targets, ROI_BBox_Inside_Weights, ROI_BBox_Outside_Weights = _tensors
+
+# ROI_BBox_Builder = build.Builder(roi_bbox)
+# ROI_BBox, ROI_BBox_Layer, ROI_BBox_Params = ROI_BBox_Builder(ROI_BBox)
+
+# ROI_Pool_Builder = build.Builder(roi_pool)
+# #ROI_Pool, ROI_Pool_Layer, ROI_Pool_Params = ROI_Pool_Builder([VGG16_LastLayer, ROI_BBox], 'ROI_POOLING')
+# ROI_Pool, ROI_Pool_Layer, ROI_Pool_Params = ROI_Pool_Builder([VGG16_LastLayer, RPN_Proposal_BBoxes])
+
+# Pred_Score_Builder = build.Builder(pred_score)
+# Pred_Prob, Pred_Score_Layer, Pred_Score_Params = Pred_Score_Builder(ROI_Pool)
+
+# Pred_BBox_Builder = build.Builder(pred_bbox)
+# Pred_BBox, Pred_BBox_Layer, Pred_BBox_Params = Pred_BBox_Builder(ROI_Pool)
