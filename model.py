@@ -4,14 +4,15 @@ import cv2
 
 from config import config as CONFIG
 from DeepBuilder import layer, activation, build
-from anchor_layer import anchor_target_layer, split_score_layer, combine_score_layer
-from proposal_layer import proposal_layer
-from proposal_target_layer import proposal_target_layer
-from roi_layer import roi_pooling
+from lib.FRCNN.anchor_layer import anchor_target_layer, split_score_layer, combine_score_layer
+from lib.FRCNN.proposal_layer import proposal_layer
+from lib.FRCNN.proposal_target_layer import proposal_target_layer
+from lib.FRCNN.bbox_transform import BBoxTransformInverse
+from lib.roi_layer import roi_pooling
+from lib.nms_wrapper import nms
+from lib.util import ClipBoxes
+
 from data_importer import import_image_and_xml, get_class_idx, get_class_name
-from nms_wrapper import nms
-from bbox_transform import BBoxTransformInverse
-from util import ClipBoxes
 
 vgg16 = (
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 64], 'name': 'conv1_1'}},
