@@ -84,6 +84,8 @@ def vis_detections(im, class_name, dets,ax, thresh=0.5):
 if __name__ == '__main__':
     org_image_set = voc_xml_parser('./data/sample_jpg/', './data/sample_xml/')
     image_set = ImageSetExpand(org_image_set)
+    boxes_set, classes_set = image_set['boxes'], np.array([[get_class_idx(cls) for cls in classes] for classes in image_set['classes']])
+    image_set['ground_truth'] = [[np.concatenate((box, [cls])) for box, cls in zip(boxes, classes)] for boxes, classes in zip(boxes_set, classes_set)]
 
     ConfigProto = tf.ConfigProto(allow_soft_placement=True)
     ConfigProto.gpu_options.allow_growth = True
