@@ -50,8 +50,8 @@ def get_class_name(idx):
 
 
 if __name__ == '__main__':
-    image_set = voc_xml_parser('./data/sample_jpg/', './data/sample_xml/')
-    image_set = ImageSetExpand(image_set)
+    org_image_set = voc_xml_parser('./data/sample_jpg/', './data/sample_xml/')
+    image_set = ImageSetExpand(org_image_set)
 
     ConfigProto = tf.ConfigProto(allow_soft_placement=True)
     ConfigProto.gpu_options.allow_growth = True

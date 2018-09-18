@@ -1,10 +1,12 @@
 import cv2
+import copy
 import numpy as np
 
 from config import config as CONFIG
 
 
 def ImageSetExpand(image_set):
+    image_set = copy.deepcopy(image_set)
     set_size = len(image_set['images'])
     for idx in range(set_size):
         
