@@ -16,7 +16,7 @@ from lib.FRCNN.bbox_transform import BBoxTransformInverse
 # Placeholder
 Image = tf.placeholder(tf.float32, [None, None, None, 3], name='image')
 ImageInfo = tf.placeholder(tf.float32, [None, 3], name='image_info')
-GroundTruth = tf.placeholder(tf.float32, [None, 5], name='ground_truth')
+# GroundTruth = tf.placeholder(tf.float32, [None, 5], name='ground_truth')
 ConfigKey = tf.placeholder(tf.string, name='config_key')
 
 # Models : VGG16, RPN, ROI
@@ -27,7 +27,7 @@ RPN_Builder = build.Builder(rpn_test)
 RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([ImageInfo, ConfigKey, VGG16_LastLayer])
 
 ROI_Builder = build.Builder(roi_test)
-Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([VGG16_LastLayer, RPN_Proposal_BBoxes, GroundTruth, ConfigKey])
+Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([VGG16_LastLayer, RPN_Proposal_BBoxes])
 Pred_CLS_Prob = SearchLayer(ROI_Layers, 'cls_prob')
 
 # definitions
@@ -50,14 +50,14 @@ def get_class_name(idx):
 
 
 if __name__ == '__main__':
-    image_set = voc_xml_parser('./data/sample_jpg/', './data/sample_xml/')
-    image_set = ImageSetExpand(image_set)
+    # image_set = voc_xml_parser('./data/sample_jpg/', './data/sample_xml/')
+    # image_set = ImageSetExpand(image_set)
 
-    img_idx = 4
-    img_org = image_set['images'][img_idx]
-    img = img_org
-    # img_org = cv2.imread('data/sample_jpg/2007_000027.jpg')
+    # img_idx = 4
+    # img_org = image_set['images'][img_idx]
     # img = img_org
+    img_org = cv2.imread('data/sample_jpg/2007_000027.jpg')
+    img = img_org
 
     img_wsize = img.shape[1]
     img_hsize = img.shape[0]

@@ -68,7 +68,7 @@ def _proposal_layer(
     proposal_bboxes = BBoxTransformInverse(all_anchors, bboxes)
     proposal_bboxes = ClipBoxes(proposal_bboxes, img_info[:2])
 
-    keep_indices = FilterBoxes(proposal_bboxes, config.RPN_MIN_SIZE * config.TARGET_SIZE / np.min(img_info[:2]))
+    keep_indices = FilterBoxes(proposal_bboxes, img_info[2])
     proposal_bboxes = proposal_bboxes[keep_indices, :]
     scores = scores[keep_indices]
 
