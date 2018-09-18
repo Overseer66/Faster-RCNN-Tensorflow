@@ -2,10 +2,10 @@ import cv2
 import numpy as np
 
 from config import config as CONFIG
-from data_importer import *
+from lib.data.voc_importer import *
 
 from DeepBuilder.util import SearchLayer
-from DeepBuilder.util import ModifiedSmoothL1
+# from DeepBuilder.util import ModifiedSmoothL1
 
 from architecture.vgg import *
 from architecture.rpn import *

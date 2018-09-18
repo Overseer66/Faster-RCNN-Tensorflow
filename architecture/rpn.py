@@ -38,8 +38,8 @@ rpn_train = (
     {'method': util.LayerSelector, 'kwargs': {'names': ['rpn_conv/3x3']}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, len(anchor_scales)*3*2], 'padding': 'VALID', 'activation': None, 'name': 'rpn_cls_score'}},
 
-    {'method': split_score_layer, 'kwargs': {'shape': 2}},
-    # {'method': split_score_layer, 'kwargs': {'shape': 2, 'name':'rpn_cls_score_reshape'}},
+    # {'method': split_score_layer, 'kwargs': {'shape': 2}},
+    {'method': split_score_layer, 'kwargs': {'shape': 2, 'name':'rpn_cls_score_reshape'}},
     {'method': activation.Softmax},
     {'method': combine_score_layer, 'kwargs': {'shape': len(anchor_scales)*3*2, 'name': 'rpn_cls_prob'}},
 

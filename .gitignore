@@ -111,8 +111,7 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
-data
-data/
+pretrain_model
 
 .idea
 .idea/

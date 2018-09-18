@@ -50,10 +50,11 @@ def get_class_name(idx):
 
 
 if __name__ == '__main__':
-    images, xmls = import_image_and_xml('./data/sample_jpg/', './data/sample_xml/')
-    img_idx = 4
+    image_set = voc_xml_parser('./data/sample_jpg/', './data/sample_xml/')
+    image_set = ImageSetExpand(image_set)
 
-    img_org = images[img_idx]
+    img_idx = 4
+    img_org = image_set['images'][img_idx]
     img = img_org
     # img_org = cv2.imread('data/sample_jpg/2007_000027.jpg')
     # img = img_org
@@ -62,7 +63,7 @@ if __name__ == '__main__':
     img_hsize = img.shape[0]
     
     img_min_size = min(img_wsize, img_hsize)
-    img_scale = CONFIG.TRAIN.TARGET_SIZE / img_min_size
+    img_scale = CONFIG.TARGET_SIZE / img_min_size
 
     img = img.astype(np.float32)
     img -= CONFIG.PIXEL_MEANS
