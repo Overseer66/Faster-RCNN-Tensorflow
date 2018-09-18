@@ -25,7 +25,7 @@ def split_score_layer(input, shape, name='SplitScore', layer_collector=None, par
         name=name
     )
 
-    safe_append(layer_collector, l)
+    safe_append(layer_collector, l, name)
 
     return l
 
@@ -47,7 +47,7 @@ def combine_score_layer(input, shape, name='CombineScore', layer_collector=None,
         name=name
     )
 
-    safe_append(layer_collector, l)
+    safe_append(layer_collector, l, name)
 
     return l
 
