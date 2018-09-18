@@ -61,17 +61,16 @@ def voc_xml_parser(img_path, xml_path):
                     gt_box.append(int(re.search(r'\d+', row).group()))
                 gt_boxes.append(gt_box)
 
-            gt_image_shape = {}
             gt_image_shape_rows = xml_data[size_start[0]:size_end[0]].split('\n')[1:-1]
             for row in gt_image_shape_rows:
                 if 'height' in row:
-                    gt_image_shape['height'] = int(re.search(r'\d+', row).group())
+                    height = int(re.search(r'\d+', row).group())
                 elif 'width' in row:
-                    gt_image_shape['width'] = int(re.search(r'\d+', row).group())
+                    width = int(re.search(r'\d+', row).group())
 
             gt_classes_batch.append(np.array(gt_classes))
             gt_boxes_batch.append(np.array(gt_boxes))
-            gt_image_shape_batch.append(gt_image_shape)
+            gt_image_shape_batch.append(np.array([height, width], dtype=np.float32))
     images = np.array(images)
     gt_classes_batch = np.array(gt_classes_batch)
     gt_boxes_batch = np.array(gt_boxes_batch)

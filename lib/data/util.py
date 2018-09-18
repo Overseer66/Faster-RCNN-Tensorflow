@@ -19,9 +19,9 @@ def ImageSetExpand(image_set):
         scale = CONFIG.TARGET_SIZE / img_min_size
 
         image_set['images'][idx] = ImageExpand(image, scale)
-        image_set['image_shape'][idx]['width'] *= scale
-        image_set['image_shape'][idx]['height'] *= scale
-        image_set['image_shape'][idx]['scale'] = scale
+        image_set['image_shape'][idx] *= scale
+        image_set['image_shape'][idx] = np.append(image_set['image_shape'][idx], scale)
+        
         image_set['boxes'][idx] = [box * scale for box in boxes]
 
     

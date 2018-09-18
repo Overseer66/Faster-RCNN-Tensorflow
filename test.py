@@ -50,32 +50,8 @@ def get_class_name(idx):
 
 
 if __name__ == '__main__':
-    # image_set = voc_xml_parser('./data/sample_jpg/', './data/sample_xml/')
-    # image_set = ImageSetExpand(image_set)
-
-    # img_idx = 4
-    # img_org = image_set['images'][img_idx]
-    # img = img_org
-    img_org = cv2.imread('data/sample_jpg/2007_000027.jpg')
-    img = img_org
-
-    img_wsize = img.shape[1]
-    img_hsize = img.shape[0]
-    
-    img_min_size = min(img_wsize, img_hsize)
-    img_scale = CONFIG.TARGET_SIZE / img_min_size
-
-    img = img.astype(np.float32)
-    img -= CONFIG.PIXEL_MEANS
-
-    img = cv2.resize(img, None, None, fx=img_scale, fy=img_scale, interpolation=cv2.INTER_LINEAR)
-
-
-    img_wsize = img.shape[1]
-    img_hsize = img.shape[0]
-    img = [img]
-    img_info = np.array([[img_hsize, img_wsize, img_scale]])
-    # gt_boxes = [xmls['boxes'][img_idx][0] + [get_class_idx(xmls['classes'][img_idx][0])]]
+    image_set = voc_xml_parser('./data/sample_jpg/', './data/sample_xml/')
+    image_set = ImageSetExpand(image_set)
 
     ConfigProto = tf.ConfigProto(allow_soft_placement=True)
     ConfigProto.gpu_options.allow_growth = True
