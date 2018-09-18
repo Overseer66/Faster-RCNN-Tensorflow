@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from config import config as CONFIG
+from config import config as COzNFIG
 from data_importer import *
 
 from DeepBuilder.util import SearchLayer
@@ -40,11 +40,13 @@ Pred_CLS_Prob = SearchLayer(ROI_Layers, 'cls_prob')
 
 
 if __name__ == '__main__':
-    # images, xmls = import_image_and_xml('./data/sample_jpg/', './data/sample_xml/')
-    # img_idx = 1
-    # img = images[img_idx]
-    img_org = cv2.imread('data/sample_jpg/2007_000027.jpg')
+    images, xmls = import_image_and_xml('./data/sample_jpg/', './data/sample_xml/')
+    img_idx = 4
+
+    img_org = images[img_idx]
     img = img_org
+    # img_org = cv2.imread('data/sample_jpg/2007_000027.jpg')
+    # img = img_org
 
     img_wsize = img.shape[1]
     img_hsize = img.shape[0]

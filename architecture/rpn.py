@@ -38,13 +38,13 @@ rpn_train = (
     {'method': util.LayerSelector, 'kwargs': {'names': ['rpn_conv/3x3']}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, len(anchor_scales)*3*2], 'padding': 'VALID', 'activation': None, 'name': 'rpn_cls_score'}},
 
-    {'method': split_score_layer, 'kwargs': {'shape': 2}},
+    {'method': split_score_layer, 'kwargs': {'shape': 2, 'name':'rpn_cls_score_reshape'}},
     {'method': activation.Softmax},
     {'method': combine_score_layer, 'kwargs': {'shape': len(anchor_scales)*3*2, 'name': 'rpn_cls_prob'}},
 
     # RPN Target Data
     {'method': util.LayerSelector, 'kwargs': {'names': ['rpn_cls_score', 'image_info', 'ground_truth', 'config_key']}},
-    {'method': anchor_target_layer, 'kwargs': {'feature_stride': [16,], 'anchor_scales': [8, 16, 32]}},
+    {'method': anchor_target_layer, 'kwargs': {'feature_stride': [16,], 'anchor_scales': [8, 16, 32], 'name':'anchor_target_layer'}},
 
     {'method': util.LayerSelector, 'kwargs': {'names': ['rpn_cls_prob', 'rpn_bbox_pred', 'image_info', 'config_key']}},
     {'method': proposal_layer, 'kwargs': {'feature_stride': [16,], 'anchor_scales': [8, 16, 32]}},

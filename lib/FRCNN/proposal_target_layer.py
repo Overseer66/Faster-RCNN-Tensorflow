@@ -29,8 +29,6 @@ def _proposal_target_layer(rpn_rois, gt_boxes, config_key, n_classes):
     config_key = config_key.decode('utf-8')
     config = CONFIG[config_key]
 
-    rpn_rois = rpn_rois[0]
-
     zeros = np.zeros((gt_boxes.shape[0], 1), dtype=gt_boxes.dtype)
     rpn_rois = np.vstack((rpn_rois, np.hstack((zeros, gt_boxes[:, :-1]))))
 
@@ -56,7 +54,7 @@ def sample_rois(rpn_rois, gt_boxes, n_fg, n_rois, n_classes, config):
     labels = gt_boxes[gt_assignment, 4]
 
     fg_inds = np.where(max_overlaps >= config.FG_THRESH)[0]
-    n_fg = int(min(n_rois, fg_inds.size))
+    n_fg = int(min(n_fg, fg_inds.size))
     if fg_inds.size > 0: fg_inds = np.random.choice(fg_inds, size=n_fg, replace=False)
     bg_inds = np.where((max_overlaps >= config.BG_THRESH_LO) &
                        (max_overlaps < config.BG_THRESH_HI))[0]
