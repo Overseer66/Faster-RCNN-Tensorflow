@@ -5,13 +5,14 @@ from config import config as CONFIG
 from lib.data.voc_importer import *
 
 from DeepBuilder.util import SearchLayer
-# from DeepBuilder.util import ModifiedSmoothL1
+from lib.util import ModifiedSmoothL1
 
 from architecture.vgg import *
 from architecture.rpn import *
 from architecture.roi import *
 
-from lib.FRCNN.bbox_transform import BBoxTransformInverse
+from lib.data.voc_importer import *
+from lib.data.util import ImageSetExpand
 
 Image = tf.placeholder(tf.float32, [None, None, None, 3], name='image')
 ImageInfo = tf.placeholder(tf.float32, [None, 3], name='image_info')
@@ -23,10 +24,10 @@ VGG16_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image)
 
 # Train Model
 RPN_Builder = build.Builder(rpn_train)
-RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([ImageInfo, GroundTruth, ConfigKey, VGG16_LastLayer])
+RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, GroundTruth, ConfigKey, VGG16_LastLayer], ['image_info', 'ground_truth', 'config_key', 'conv5_3']])
 
 ROI_Builder = build.Builder(roi_train)
-Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([VGG16_LastLayer, RPN_Proposal_BBoxes, GroundTruth, ConfigKey])
+Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[VGG16_LastLayer, RPN_Proposal_BBoxes, GroundTruth, ConfigKey], ['conv5_3', 'rpn_proposal_bboxes', 'ground_truth', 'config_key']])
 Pred_CLS_Prob = SearchLayer(ROI_Layers, 'cls_prob')
 
 # LOSS
@@ -65,27 +66,32 @@ rcnn_bbox_loss = tf.reduce_mean(tf.reduce_sum(rcnn_bbox_l1, reduction_indices=[1
 
 final_loss = rpn_cls_loss + rpn_bbox_loss + rcnn_cls_loss + rcnn_bbox_loss
 
-# global_step = tf.Variable(0, trainable=False)
-# lr = tf.train.exponential_decay(CONFIG.TRAIN.LEARNING_RATE, global_step, CONFIG.TRAIN.STEPSIZE, 0.1, staircase=True)
-# momentum = CONFIG.TRAIN.MOMENTUM
-# train_op = tf.train.MomentumOptimizer(lr, momentum).minimize(final_loss, global_step=global_step)
+global_step = tf.Variable(0, trainable=False)
+lr = tf.train.exponential_decay(CONFIG.TRAIN.LEARNING_RATE, global_step, CONFIG.TRAIN.STEPSIZE, 0.1, staircase=True)
+momentum = CONFIG.TRAIN.MOMENTUM
+train_op = tf.train.MomentumOptimizer(lr, momentum).minimize(final_loss, global_step=global_step)
 
-
+def get_class_idx(name):
+    class_names = ['aeroplane', 'bicycle', 'bird', 'boat',
+           'bottle', 'bus', 'car', 'cat', 'chair',
+           'cow', 'diningtable', 'dog', 'horse',
+           'motorbike', 'person', 'pottedplant',
+           'sheep', 'sofa', 'train', 'tvmonitor']
+    return class_names.index(name)+1
 
 if __name__ == '__main__':
-    images, xmls = import_image_and_xml('./data/sample_jpg/', './data/sample_xml/')
+    org_image_set = voc_xml_parser('./data/sample_jpg/', './data/sample_xml/')
+    image_set = ImageSetExpand(org_image_set)
     idx = 3
-    img_org = images[idx]
+    img_org = image_set['images'][idx]
     img = img_org
-    gt_boxes = [xmls['boxes'][idx][0] + [get_class_idx(xmls['classes'][idx][0])]]
-    # img_org = cv2.imread('data/sample_jpg/2007_000027.jpg')
-    # img = img_org
+    gt_boxes = [np.concatenate([image_set['boxes'][idx][0], [get_class_idx(image_set['classes'][idx][0])]])]
 
     img_wsize = img.shape[1]
     img_hsize = img.shape[0]
 
     img_min_size = min(img_wsize, img_hsize)
-    img_scale = CONFIG.TRAIN.TARGET_SIZE / img_min_size
+    img_scale = CONFIG.TARGET_SIZE / img_min_size
 
     img = img.astype(np.float32)
     img -= CONFIG.PIXEL_MEANS
@@ -102,12 +108,12 @@ if __name__ == '__main__':
     ConfigProto.gpu_options.allow_growth = True
     sess = tf.InteractiveSession(config=ConfigProto)
 
-    # tf.global_variables_initializer().run(session=sess)
-    saver = tf.train.Saver()
-    saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
+    tf.global_variables_initializer().run(session=sess)
+    # saver = tf.train.Saver()
+    # saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
 
-    rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v, rcnn_bbox_loss_v = sess.run(
-        [rpn_cls_loss, rpn_bbox_loss, rcnn_cls_loss, rcnn_bbox_loss],
+    rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v, rcnn_bbox_loss_v, _ = sess.run(
+        [rpn_cls_loss, rpn_bbox_loss, rcnn_cls_loss, rcnn_bbox_loss, train_op],
         {
             Image: img,
             ImageInfo: img_info,
