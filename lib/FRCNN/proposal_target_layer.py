@@ -20,7 +20,7 @@ def proposal_target_layer(
             [input[0], input[1], input[2], n_classes,],
             [tf.float32, tf.float32, tf.float32, tf.float32, tf.float32]
         )
-        safe_append(layer_collector, l)
+        safe_append(layer_collector, l, name)
 
         return l
 

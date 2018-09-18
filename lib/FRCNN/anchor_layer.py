@@ -66,7 +66,7 @@ def anchor_target_layer(
             [tf.float32, tf.float32, tf.float32, tf.float32]
         )
         for layer in layers:
-            safe_append(layer_collector, layer)
+            safe_append(layer_collector, layer, name)
 
         return layers
 

@@ -23,7 +23,7 @@ def proposal_layer(
             [input[0], input[1], input[2], input[3], feature_stride, anchor_scales,],
             tf.float32
         )
-        safe_append(layer_collector, l)
+        safe_append(layer_collector, l, name)
 
         return l
 

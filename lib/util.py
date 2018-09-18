@@ -1,3 +1,4 @@
+import tensorflow as tf
 import numpy as np
 import os
 
@@ -43,3 +44,20 @@ def AnchorOverlaps(anchors, gt_boxes):
 
                     overlaps[a, k] = iw * ih / ua
     return overlaps
+
+
+def ModifiedSmoothL1(sigma, bbox_pred, bbox_targets, bbox_inside_weights, bbox_outside_weights):
+
+    sigma2 = sigma * sigma
+
+    inside_mul = tf.multiply(bbox_inside_weights, tf.subtract(bbox_pred, bbox_targets))
+
+    smooth_l1_sign = tf.cast(tf.less(tf.abs(inside_mul), 1.0 / sigma2), tf.float32)
+    smooth_l1_option1 = tf.multiply(tf.multiply(inside_mul, inside_mul), 0.5 * sigma2)
+    smooth_l1_option2 = tf.subtract(tf.abs(inside_mul), 0.5 / sigma2)
+    smooth_l1_result = tf.add(tf.multiply(smooth_l1_option1, smooth_l1_sign),
+                              tf.multiply(smooth_l1_option2, tf.abs(tf.subtract(smooth_l1_sign, 1.0))))
+
+    outside_mul = tf.multiply(bbox_outside_weights, smooth_l1_result)
+
+    return outside_mul
