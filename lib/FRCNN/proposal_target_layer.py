@@ -4,8 +4,24 @@ import tensorflow as tf
 from config import config as CONFIG
 from DeepBuilder.util import safe_append
 
-from lib.FRCNN.bbox_transform import BBoxTransform
-from lib.util import AnchorOverlaps
+from lib.FRCNN.bbox_transform import BBoxTransform, BBoxTransformInverse
+from lib.util import AnchorOverlaps, ClipBoxes
+
+
+def proposal_bbox_layer(
+        input,
+        name='ProposalBBoxLayer',
+        layer_collector=None,
+    ):
+    with tf.variable_scope(name) as scope:
+        l = tf.py_func(
+            _proposal_bbox_layer,
+            [input[0], input[1], input[2][0],],
+            tf.float32,
+        )
+        safe_append(layer_collector, l, name)
+
+        return l
 
 
 def proposal_target_layer(
@@ -20,9 +36,18 @@ def proposal_target_layer(
             [input[0], input[1], input[2], n_classes,],
             [tf.float32, tf.float32, tf.float32, tf.float32, tf.float32]
         )
-        safe_append(layer_collector, l)
+        safe_append(layer_collector, l, name)
 
         return l
+
+
+def _proposal_bbox_layer(rois, pred_boxes, img_info):
+    boxes = rois[:, 1:5] / img_info[2]
+    pred_boxes = BBoxTransformInverse(boxes, pred_boxes)
+    pred_boxes = ClipBoxes(pred_boxes, img_info[:2])
+
+    return pred_boxes
+
 
 def _proposal_target_layer(rpn_rois, gt_boxes, config_key, n_classes):
 

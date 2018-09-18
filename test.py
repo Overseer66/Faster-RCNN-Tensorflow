@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import time
 
 from config import config as CONFIG
 
@@ -27,8 +28,9 @@ RPN_Builder = build.Builder(rpn_test)
 RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, ConfigKey, VGG16_LastLayer], ['image_info', 'config_key', 'conv5_3']])
 
 ROI_Builder = build.Builder(roi_test)
-Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[VGG16_LastLayer, RPN_Proposal_BBoxes], ['conv5_3', 'rpn_proposal_bboxes']])
+Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[ImageInfo, VGG16_LastLayer, RPN_Proposal_BBoxes], ['image_info', 'conv5_3', 'rpn_proposal_bboxes']])
 Pred_CLS_Prob = SearchLayer(ROI_Layers, 'cls_prob')
+
 
 # definitions
 def get_class_idx(name):
@@ -92,20 +94,18 @@ if __name__ == '__main__':
     saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
 
     for idx, (img, img_info) in enumerate(zip(image_set['images'], image_set['image_shape'])):
-        pred_bbox, pred_prob, rois = sess.run(
-            [Pred_BBoxes, Pred_CLS_Prob, RPN_Proposal_BBoxes],
+        start_time = time.time()
+        pred_boxes, pred_prob = sess.run(
+            [Pred_BBoxes, Pred_CLS_Prob],
             {
                 Image: [img],
                 ImageInfo: [img_info],
-                #GroundTruth: gt_boxes,
                 ConfigKey: 'TRAIN',
             }
         )
+        end_time = time.time()
 
-        boxes = rois[:, 1:5] / img_info[2]
-        pred_boxes = pred_bbox
-        pred_boxes = BBoxTransformInverse(boxes, pred_boxes)
-        pred_boxes = ClipBoxes(pred_boxes, img_info[:2])
+        print('Figure %2d Recognition done. - %5.2f (s)' % (idx+1, end_time-start_time))
 
         img = org_image_set['images'][idx]
         img = img[:, :, (2, 1, 0)]
@@ -120,7 +120,7 @@ if __name__ == '__main__':
             keep = nms(dets, 0.3)
             dets = dets[keep, :]
             vis_detections(img, get_class_name(idx-1), dets, ax)
-
+        
     plt.show()
 
     pass

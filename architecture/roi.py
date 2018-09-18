@@ -1,7 +1,7 @@
 from config import config as CONFIG
 
 from DeepBuilder import layer, activation, build, util
-from lib.FRCNN.proposal_target_layer import proposal_target_layer
+from lib.FRCNN.proposal_target_layer import proposal_target_layer, proposal_bbox_layer
 from lib.roi_layer import roi_pooling
 from lib.nms_wrapper import nms
 from lib.util import ClipBoxes
@@ -24,6 +24,9 @@ roi_test = (
 
     {'method': util.LayerSelector, 'kwargs': {'names': ['fc7']}},
     {'method': layer.fully_connected_layer, 'kwargs': {'output_size': n_classes*4, 'activation': None, 'name': 'bbox_pred'}},
+
+    {'method': util.LayerSelector, 'kwargs': {'names': ['rpn_proposal_bboxes', 'bbox_pred', 'image_info']}},
+    {'method': proposal_bbox_layer, 'kwargs': {'name': 'proposal_boxes'}}
 )
 
 roi_train = (
