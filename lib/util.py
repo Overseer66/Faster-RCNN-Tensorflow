@@ -1,4 +1,12 @@
 import numpy as np
+import os
+
+def find_path(dirs, filename):
+    for dir in dirs:
+        filepath = os.path.join(dir, filename)
+        if os.path.exists(filepath):
+            return filepath
+
 
 def ClipBoxes(boxes, im_shape):
     """

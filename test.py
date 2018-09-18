@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 
 from config import config as CONFIG
-from data_importer import *
 
 from DeepBuilder.util import SearchLayer
 
@@ -10,27 +9,20 @@ from architecture.vgg import *
 from architecture.rpn import *
 from architecture.roi import *
 
+from lib.data.voc_importer import *
+from lib.data.util import ImageSetExpand
 from lib.FRCNN.bbox_transform import BBoxTransformInverse
 
+# Placeholder
 Image = tf.placeholder(tf.float32, [None, None, None, 3], name='image')
 ImageInfo = tf.placeholder(tf.float32, [None, 3], name='image_info')
 GroundTruth = tf.placeholder(tf.float32, [None, 5], name='ground_truth')
 ConfigKey = tf.placeholder(tf.string, name='config_key')
 
+# Models : VGG16, RPN, ROI
 VGG16_Builder = build.Builder(vgg16)
 VGG16_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image)
 
-
-# Train Model
-# RPN_Builder = build.Builder(rpn_train)
-# RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([ImageInfo, GroundTruth, ConfigKey, VGG16_LastLayer])
-
-# ROI_Builder = build.Builder(roi_train)
-# Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([VGG16_LastLayer, RPN_Proposal_BBoxes, GroundTruth, ConfigKey])
-# Pred_CLS_Prob = SearchLayer(ROI_Layers, 'cls_prob')
-
-
-# Test Model
 RPN_Builder = build.Builder(rpn_test)
 RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([ImageInfo, ConfigKey, VGG16_LastLayer])
 
@@ -38,9 +30,29 @@ ROI_Builder = build.Builder(roi_test)
 Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([VGG16_LastLayer, RPN_Proposal_BBoxes, GroundTruth, ConfigKey])
 Pred_CLS_Prob = SearchLayer(ROI_Layers, 'cls_prob')
 
+# definitions
+def get_class_idx(name):
+    class_names = ['aeroplane', 'bicycle', 'bird', 'boat',
+           'bottle', 'bus', 'car', 'cat', 'chair',
+           'cow', 'diningtable', 'dog', 'horse',
+           'motorbike', 'person', 'pottedplant',
+           'sheep', 'sofa', 'train', 'tvmonitor']
+    return class_names.index(name)+1
+
+
+def get_class_name(idx):
+    class_names = ['aeroplane', 'bicycle', 'bird', 'boat',
+           'bottle', 'bus', 'car', 'cat', 'chair',
+           'cow', 'diningtable', 'dog', 'horse',
+           'motorbike', 'person', 'pottedplant',
+           'sheep', 'sofa', 'train', 'tvmonitor']
+    return class_names[idx]
+
 
 if __name__ == '__main__':
-    # images, xmls = import_image_and_xml('./data/sample_jpg/', './data/sample_xml/')
+    image_set = voc_xml_parser('./data/sample_jpg/', './data/sample_xml/')
+    image_set = ImageSetExpand(image_set)
+
     # img_idx = 1
     # img = images[img_idx]
     img_org = cv2.imread('data/sample_jpg/2007_000027.jpg')
