@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import time
 
 from config import config as CONFIG
 from lib.data.voc_importer import *
@@ -82,46 +83,39 @@ def get_class_idx(name):
 if __name__ == '__main__':
     org_image_set = voc_xml_parser('./data/sample_jpg/', './data/sample_xml/')
     image_set = ImageSetExpand(org_image_set)
-    idx = 3
-    img_org = image_set['images'][idx]
-    img = img_org
-    gt_boxes = [np.concatenate([image_set['boxes'][idx][0], [get_class_idx(image_set['classes'][idx][0])]])]
-
-    img_wsize = img.shape[1]
-    img_hsize = img.shape[0]
-
-    img_min_size = min(img_wsize, img_hsize)
-    img_scale = CONFIG.TARGET_SIZE / img_min_size
-
-    img = img.astype(np.float32)
-    img -= CONFIG.PIXEL_MEANS
-
-    img = cv2.resize(img, None, None, fx=img_scale, fy=img_scale, interpolation=cv2.INTER_LINEAR)
-
-    img_wsize = img.shape[1]
-    img_hsize = img.shape[0]
-    img = [img]
-    img_info = np.array([[img_hsize, img_wsize, img_scale]])
-    # gt_boxes = [xmls['boxes'][img_idx][0] + [get_class_idx(xmls['classes'][img_idx][0])]]
 
     ConfigProto = tf.ConfigProto(allow_soft_placement=True)
     ConfigProto.gpu_options.allow_growth = True
     sess = tf.InteractiveSession(config=ConfigProto)
 
     tf.global_variables_initializer().run(session=sess)
-    # saver = tf.train.Saver()
+    saver = tf.train.Saver()
     # saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
 
-    rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v, rcnn_bbox_loss_v, _ = sess.run(
-        [rpn_cls_loss, rpn_bbox_loss, rcnn_cls_loss, rcnn_bbox_loss, train_op],
-        {
-            Image: img,
-            ImageInfo: img_info,
-            GroundTruth: gt_boxes,
-            ConfigKey: 'TRAIN',
-        }
-    )
+    for rpt in range(5000):
+        for idx, (img, img_info, gt_boxes, gt_classes) in enumerate(zip(image_set['images'], image_set['image_shape'], image_set['boxes'], image_set['classes'])):
+            gts = [np.concatenate([gt_boxes[i], [get_class_idx(gt_classes[i])]]) for i in range(len(gt_boxes))]
 
-    print(rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v, rcnn_bbox_loss_v)
+            start_time = time.time()
+            rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v, rcnn_bbox_loss_v, _, rcnn_score, rcnn_label, rpn_score, rpn_label  = sess.run(
+                [rpn_cls_loss, rpn_bbox_loss, rcnn_cls_loss, rcnn_bbox_loss, train_op, rcnn_cls_score, rcnn_cls_label, rpn_cls_score, rpn_cls_label],
+                {
+                    Image: [img],
+                    ImageInfo: [img_info],
+                    GroundTruth: gts,
+                    ConfigKey: 'TRAIN',
+                }
+            )
+            end_time = time.time()
+
+            # print(rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v, rcnn_bbox_loss_v)
+            print("Step", rpt*len(image_set['classes'])+idx)
+            print("Loss :", rpn_cls_loss_v,'\t',rpn_bbox_loss_v,'\t',rcnn_cls_loss_v,'\t',rcnn_bbox_loss_v)
+            print("Total Loss :", rpn_cls_loss_v+rpn_bbox_loss_v+rcnn_cls_loss_v+rcnn_bbox_loss_v)
+            print('Figure %2d Recognition done. - %5.2f (s)' % (idx+1, end_time-start_time))
+
+        if rpt%1000 == 0:
+            saver.save(sess, './data/pretrain_model/sample.ckpt', global_step=global_step)
+
 
     pass

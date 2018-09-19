@@ -120,4 +120,5 @@ def get_bbox_regression_labels(bbox_target_data, n_classes, config):
         bbox_targets[idx,start:end] = bbox_target_data[idx,1:]
         bbox_inside_weights[idx,start:end] = config.BBOX_INSIDE_WEIGHTS
 
+
     return bbox_targets, bbox_inside_weights

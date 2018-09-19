@@ -93,7 +93,8 @@ if __name__ == '__main__':
     
     #tf.global_variables_initializer().run(session=sess)
     saver = tf.train.Saver()
-    saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
+    # saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
+    saver.restore(sess, './data/pretrain_model/sample.ckpt-40010')
 
     for idx, (img, img_info) in enumerate(zip(image_set['images'], image_set['image_shape'])):
         start_time = time.time()

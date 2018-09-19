@@ -164,7 +164,6 @@ def _anchor_target_layer(
 
 
 def ComputTargets(ex_rois, gt_rois):
-    print(ex_rois.shape, gt_rois.shape)
     assert ex_rois.shape[0] == gt_rois.shape[0]
     assert ex_rois.shape[1] == 4
     assert gt_rois.shape[1] == 5
