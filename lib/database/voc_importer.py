@@ -85,3 +85,5 @@ def voc_xml_parser(img_path, xml_path, on_memory=True):
     if on_memory:
         image_set = {'images': images, 'image_shape': gt_image_shape_batch, 'classes': gt_classes_batch, 'boxes': gt_boxes_batch}
         yield image_set
+
+
