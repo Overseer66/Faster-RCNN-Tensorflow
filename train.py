@@ -81,7 +81,7 @@ def get_class_idx(name):
     return class_names.index(name)+1
 
 if __name__ == '__main__':
-    org_image_set = voc_xml_parser('./data/converge_test/train_jpg/', './data/converge_test/train_xml/')
+    org_image_set = voc_xml_parser('./data/data/full/jpg/', './data/data/full/xml/')
     image_set = ImageSetExpand(org_image_set)
 
     ConfigProto = tf.ConfigProto(allow_soft_placement=True)
@@ -98,8 +98,8 @@ if __name__ == '__main__':
             gts = [np.concatenate([gt_boxes[i], [get_class_idx(gt_classes[i])]]) for i in range(len(gt_boxes))]
 
             start_time = time.time()
-            rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v, rcnn_bbox_loss_v, _, rcnn_score, rcnn_label, rpn_score, rpn_label  = sess.run(
-                [rpn_cls_loss, rpn_bbox_loss, rcnn_cls_loss, rcnn_bbox_loss, train_op, rcnn_cls_score, rcnn_cls_label, rpn_cls_score, rpn_cls_label],
+            rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v, rcnn_bbox_loss_v, global_step_v , _ = sess.run(
+                [rpn_cls_loss, rpn_bbox_loss, rcnn_cls_loss, rcnn_bbox_loss, global_step, train_op],
                 {
                     Image: [img],
                     ImageInfo: [img_info],
@@ -109,14 +109,15 @@ if __name__ == '__main__':
             )
             end_time = time.time()
 
-            # print(rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v, rcnn_bbox_loss_v)
-            print("Step", rpt*len(image_set['classes'])+idx)
-            print("Loss :", rpn_cls_loss_v,'\t',rpn_bbox_loss_v,'\t',rcnn_cls_loss_v,'\t',rcnn_bbox_loss_v)
-            print("Total Loss :", rpn_cls_loss_v+rpn_bbox_loss_v+rcnn_cls_loss_v+rcnn_bbox_loss_v)
-            print('Figure %2d Recognition done. - %5.2f (s)' % (idx+1, end_time-start_time))
+            print("-"*50)
+            print("Step", global_step_v)
+            print("Total loss :\t%.4f" %(rpn_cls_loss_v+rpn_bbox_loss_v+rcnn_cls_loss_v+rcnn_bbox_loss_v))
+            print("Losses :\t%.4f\t%.4f\t%.4f\t%.4f " %(rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v,rcnn_bbox_loss_v))
+            print("Time spent :%.4f" %(end_time - start_time))
+            # print('Figure %2d Recognition done. - %5.2f (s)' % (idx+1, end_time-start_time))
 
-        if (rpt+1)%10==0:
-            saver.save(sess, './data/converge_test/models/converge_test.ckpt', global_step=global_step)
+            if global_step_v%100000==0:
+                saver.save(sess, './data/converge_test/models/converge_test.ckpt', global_step=global_step)
 
 
 
