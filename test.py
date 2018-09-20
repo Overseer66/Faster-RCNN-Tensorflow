@@ -91,7 +91,7 @@ if __name__ == '__main__':
     saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
     # saver.restore(sess, './data/pretrain_model/sample.ckpt-40010')
 
-    on_memory = True
+    on_memory = False
     if on_memory:
         org_image_set = next(voc_xml_parser('./data/sample_jpg/', './data/sample_xml/', on_memory=on_memory))
         image_set = ImageSetExpand(org_image_set)
@@ -135,15 +135,15 @@ if __name__ == '__main__':
             boxes_set, classes_set = image_set['boxes'], np.array([[get_class_idx(cls) for cls in classes] for classes in image_set['classes']])
             image_set['ground_truth'] = [[np.concatenate((box, [cls])) for box, cls in zip(boxes, classes)] for boxes, classes in zip(boxes_set, classes_set)]
 
-            img = image_set['images'][0]
-            img_info = image_set['image_shape'][0]
+            img = image_set['images']
+            img_info = image_set['image_shape']
 
             start_time = time.time()
             pred_boxes, pred_prob = sess.run(
                 [Pred_BBoxes, Pred_CLS_Prob],
                 {
-                    Image: [img],
-                    ImageInfo: [img_info],
+                    Image: img,
+                    ImageInfo: img_info,
                     ConfigKey: 'TEST',
                 }
             )
