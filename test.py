@@ -10,8 +10,8 @@ from architecture.vgg import *
 from architecture.rpn import *
 from architecture.roi import *
 
-from lib.data.voc_importer import *
-from lib.data.util import ImageSetExpand
+from lib.database.voc_importer import *
+from lib.database.util import ImageSetExpand
 from lib.FRCNN.bbox_transform import BBoxTransformInverse
 
 # Placeholder
@@ -82,11 +82,6 @@ def vis_detections(im, class_name, dets,ax, thresh=0.5):
     plt.draw()
 
 if __name__ == '__main__':
-    org_image_set = voc_xml_parser('./data/sample_jpg/', './data/sample_xml/')
-    image_set = ImageSetExpand(org_image_set)
-    boxes_set, classes_set = image_set['boxes'], np.array([[get_class_idx(cls) for cls in classes] for classes in image_set['classes']])
-    image_set['ground_truth'] = [[np.concatenate((box, [cls])) for box, cls in zip(boxes, classes)] for boxes, classes in zip(boxes_set, classes_set)]
-
     ConfigProto = tf.ConfigProto(allow_soft_placement=True)
     ConfigProto.gpu_options.allow_growth = True
     sess = tf.InteractiveSession(config=ConfigProto)
@@ -94,36 +89,79 @@ if __name__ == '__main__':
     #tf.global_variables_initializer().run(session=sess)
     saver = tf.train.Saver()
     saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
-    # saver.restore(sess, './data/pretrain_model/sample.ckpt-1000')
+    # saver.restore(sess, './data/pretrain_model/sample.ckpt-40010')
 
-    for idx, (img, img_info) in enumerate(zip(image_set['images'], image_set['image_shape'])):
-        start_time = time.time()
-        pred_boxes, pred_prob = sess.run(
-            [Pred_BBoxes, Pred_CLS_Prob],
-            {
-                Image: [img],
-                ImageInfo: [img_info],
-                ConfigKey: 'TRAIN',
-            }
-        )
-        end_time = time.time()
+    on_memory = False
+    if on_memory:
+        org_image_set = next(voc_xml_parser('./data/sample_jpg/', './data/sample_xml/', on_memory=on_memory))
+        image_set = ImageSetExpand(org_image_set)
+        boxes_set, classes_set = image_set['boxes'], np.array([[get_class_idx(cls) for cls in classes] for classes in image_set['classes']])
+        image_set['ground_truth'] = [[np.concatenate((box, [cls])) for box, cls in zip(boxes, classes)] for boxes, classes in zip(boxes_set, classes_set)]
 
-        print('Figure %2d Recognition done. - %5.2f (s)' % (idx+1, end_time-start_time))
 
-        img = org_image_set['images'][idx]
-        img = img[:, :, (2, 1, 0)]
-        fig, ax = plt.subplots(figsize=(12, 12))
-        ax.imshow(img, aspect='equal')
+        for idx, (img, img_info) in enumerate(zip(image_set['images'], image_set['image_shape'])):
+            start_time = time.time()
+            pred_boxes, pred_prob = sess.run(
+                [Pred_BBoxes, Pred_CLS_Prob],
+                {
+                    Image: [img],
+                    ImageInfo: [img_info],
+                    ConfigKey: 'TEST',
+                }
+            )
+            end_time = time.time()
 
-        for idx in range(n_classes-1):
-            idx += 1
-            cls_boxes = pred_boxes[:, 4*idx:4*(idx+1)]
-            cls_scores = pred_prob[:, idx]
-            dets = np.hstack((cls_boxes, cls_scores[:, np.newaxis])).astype(np.float32)
-            keep = nms(dets, 0.3)
-            dets = dets[keep, :]
-            vis_detections(img, get_class_name(idx-1), dets, ax)
-        
+            print('Figure %2d Recognition done. - %5.2f (s)' % (idx+1, end_time-start_time))
+
+            img = org_image_set['images'][idx]
+            img = img[:, :, (2, 1, 0)]
+            fig, ax = plt.subplots(figsize=(12, 12))
+            ax.imshow(img, aspect='equal')
+
+            for idx in range(n_classes-1):
+                idx += 1
+                cls_boxes = pred_boxes[:, 4*idx:4*(idx+1)]
+                cls_scores = pred_prob[:, idx]
+                dets = np.hstack((cls_boxes, cls_scores[:, np.newaxis])).astype(np.float32)
+                keep = nms(dets, 0.3)
+                dets = dets[keep, :]
+                vis_detections(img, get_class_name(idx-1), dets, ax)
+    else:
+        for idx, org_image_set in enumerate(voc_xml_parser('./data/sample_jpg/', './data/sample_xml/', on_memory=on_memory)):
+            image_set = ImageSetExpand(org_image_set)
+            boxes_set, classes_set = image_set['boxes'], np.array([[get_class_idx(cls) for cls in classes] for classes in image_set['classes']])
+            image_set['ground_truth'] = [[np.concatenate((box, [cls])) for box, cls in zip(boxes, classes)] for boxes, classes in zip(boxes_set, classes_set)]
+
+            img = image_set['images'][0]
+            img_info = image_set['image_shape'][0]
+
+            start_time = time.time()
+            pred_boxes, pred_prob = sess.run(
+                [Pred_BBoxes, Pred_CLS_Prob],
+                {
+                    Image: [img],
+                    ImageInfo: [img_info],
+                    ConfigKey: 'TEST',
+                }
+            )
+            end_time = time.time()
+
+            print('Figure %2d Recognition done. - %5.2f (s)' % (idx+1, end_time-start_time))
+
+            img = org_image_set['images'][0]
+            img = img[:, :, (2, 1, 0)]
+            fig, ax = plt.subplots(figsize=(12, 12))
+            ax.imshow(img, aspect='equal')
+
+            for idx in range(n_classes-1):
+                idx += 1
+                cls_boxes = pred_boxes[:, 4*idx:4*(idx+1)]
+                cls_scores = pred_prob[:, idx]
+                dets = np.hstack((cls_boxes, cls_scores[:, np.newaxis])).astype(np.float32)
+                keep = nms(dets, 0.3)
+                dets = dets[keep, :]
+                vis_detections(img, get_class_name(idx-1), dets, ax)
+
     plt.show()
 
     pass
