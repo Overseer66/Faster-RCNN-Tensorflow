@@ -92,7 +92,7 @@ if __name__ == '__main__':
     saver = tf.train.Saver()
     # saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
 
-    for rpt in range(50000):
+    for rpt in range(100):
 
         for idx, (img, img_info, gt_boxes, gt_classes) in enumerate(zip(image_set['images'], image_set['image_shape'], image_set['boxes'], image_set['classes'])):
             gts = [np.concatenate([gt_boxes[i], [get_class_idx(gt_classes[i])]]) for i in range(len(gt_boxes))]
@@ -115,7 +115,7 @@ if __name__ == '__main__':
             print("Total Loss :", rpn_cls_loss_v+rpn_bbox_loss_v+rcnn_cls_loss_v+rcnn_bbox_loss_v)
             print('Figure %2d Recognition done. - %5.2f (s)' % (idx+1, end_time-start_time))
 
-        if (rpt+1)%10000==0:
+        if (rpt+1)%10==0:
             saver.save(sess, './data/converge_test/models/converge_test.ckpt', global_step=global_step)
 
 
