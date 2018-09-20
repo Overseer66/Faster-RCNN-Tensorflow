@@ -3,7 +3,6 @@ import numpy as np
 import time
 
 from config import config as CONFIG
-from lib.data.voc_importer import *
 
 from DeepBuilder.util import SearchLayer
 from lib.util import ModifiedSmoothL1
@@ -12,8 +11,8 @@ from architecture.vgg import *
 from architecture.rpn import *
 from architecture.roi import *
 
-from lib.data.voc_importer import *
-from lib.data.util import ImageSetExpand
+from lib.database.voc_importer import *
+from lib.database.util import ImageSetExpand
 
 Image = tf.placeholder(tf.float32, [None, None, None, 3], name='image')
 ImageInfo = tf.placeholder(tf.float32, [None, 3], name='image_info')
@@ -81,8 +80,6 @@ def get_class_idx(name):
     return class_names.index(name)+1
 
 if __name__ == '__main__':
-    org_image_set = voc_xml_parser('./data/converge_test/train_jpg/', './data/converge_test/train_xml/')
-    image_set = ImageSetExpand(org_image_set)
 
     ConfigProto = tf.ConfigProto(allow_soft_placement=True)
     ConfigProto.gpu_options.allow_growth = True
@@ -92,31 +89,71 @@ if __name__ == '__main__':
     saver = tf.train.Saver()
     # saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
 
-    for rpt in range(100):
+    on_memory = False
 
-        for idx, (img, img_info, gt_boxes, gt_classes) in enumerate(zip(image_set['images'], image_set['image_shape'], image_set['boxes'], image_set['classes'])):
-            gts = [np.concatenate([gt_boxes[i], [get_class_idx(gt_classes[i])]]) for i in range(len(gt_boxes))]
+    if on_memory:
+        org_image_set = next(voc_xml_parser('./data/data/sample_10/jpg/', './data/data/sample_10/xml/'))
+        image_set = ImageSetExpand(org_image_set)
 
-            start_time = time.time()
-            rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v, rcnn_bbox_loss_v, _, rcnn_score, rcnn_label, rpn_score, rpn_label  = sess.run(
-                [rpn_cls_loss, rpn_bbox_loss, rcnn_cls_loss, rcnn_bbox_loss, train_op, rcnn_cls_score, rcnn_cls_label, rpn_cls_score, rpn_cls_label],
-                {
-                    Image: [img],
-                    ImageInfo: [img_info],
-                    GroundTruth: gts,
-                    ConfigKey: 'TRAIN',
-                }
-            )
-            end_time = time.time()
+        for rpt in range(100):
+            for idx, (img, img_info, gt_boxes, gt_classes) in enumerate(zip(image_set['images'], image_set['image_shape'], image_set['boxes'], image_set['classes'])):
+                gts = [np.concatenate([gt_boxes[i], [get_class_idx(gt_classes[i])]]) for i in range(len(gt_boxes))]
 
-            # print(rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v, rcnn_bbox_loss_v)
-            print("Step", rpt*len(image_set['classes'])+idx)
-            print("Loss :", rpn_cls_loss_v,'\t',rpn_bbox_loss_v,'\t',rcnn_cls_loss_v,'\t',rcnn_bbox_loss_v)
-            print("Total Loss :", rpn_cls_loss_v+rpn_bbox_loss_v+rcnn_cls_loss_v+rcnn_bbox_loss_v)
-            print('Figure %2d Recognition done. - %5.2f (s)' % (idx+1, end_time-start_time))
+                start_time = time.time()
+                rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v, rcnn_bbox_loss_v, global_step_v , _ = sess.run(
+                    [rpn_cls_loss, rpn_bbox_loss, rcnn_cls_loss, rcnn_bbox_loss, global_step, train_op],
+                    {
+                        Image: [img],
+                        ImageInfo: [img_info],
+                        GroundTruth: gts,
+                        ConfigKey: 'TRAIN',
+                    }
+                )
+                end_time = time.time()
 
-        if (rpt+1)%10==0:
-            saver.save(sess, './data/converge_test/models/converge_test.ckpt', global_step=global_step)
+                print("-"*50)
+                print("Step", global_step_v)
+                print("Total loss :\t%.4f" %(rpn_cls_loss_v+rpn_bbox_loss_v+rcnn_cls_loss_v+rcnn_bbox_loss_v))
+                print("Losses :\t%.4f\t%.4f\t%.4f\t%.4f " %(rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v,rcnn_bbox_loss_v))
+                print("Time spent :%.4f" %(end_time - start_time))
+
+                if global_step_v%100000==0:
+                    saver.save(sess, './data/converge_test/models/converge_test.ckpt', global_step=global_step)
+
+    else:
+        for rpt in range(100):
+            for idx, org_image_set in enumerate(
+                    voc_xml_parser('./data/data/full/jpg/', './data/data/full/xml/', on_memory=on_memory)):
+
+                image_set = ImageSetExpand(org_image_set)
+                boxes_set, classes_set = image_set['boxes'], np.array(
+                    [[get_class_idx(cls) for cls in classes] for classes in image_set['classes']])
+                img = image_set['images'][0]
+                img_info = image_set['image_shape'][0]
+                gts = [[np.concatenate((box, [cls])) for box, cls in zip(boxes, classes)] for
+                                             boxes, classes in zip(boxes_set, classes_set)][0]
+
+                start_time = time.time()
+                rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v, rcnn_bbox_loss_v, global_step_v , _ = sess.run(
+                    [rpn_cls_loss, rpn_bbox_loss, rcnn_cls_loss, rcnn_bbox_loss, global_step, train_op],
+                    {
+                        Image: [img],
+                        ImageInfo: [img_info],
+                        GroundTruth: gts,
+                        ConfigKey: 'TRAIN',
+                    }
+                )
+                end_time = time.time()
+
+                print("-"*50)
+                print("Step", global_step_v)
+                print("Total loss :\t%.4f" %(rpn_cls_loss_v+rpn_bbox_loss_v+rcnn_cls_loss_v+rcnn_bbox_loss_v))
+                print("Losses :\t%.4f\t%.4f\t%.4f\t%.4f " %(rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v,rcnn_bbox_loss_v))
+                print("Time spent :%.4f" %(end_time - start_time))
+                # print('Figure %2d Recognition done. - %5.2f (s)' % (idx+1, end_time-start_time))
+
+                if global_step_v%100000==0:
+                    saver.save(sess, './data/converge_test/models/converge_test.ckpt', global_step=global_step)
 
 
 
