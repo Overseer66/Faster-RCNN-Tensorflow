@@ -58,7 +58,12 @@ def voc_xml_parser(img_path, xml_path, on_memory=True):
                 xml_boxes = xml_box.split('\n')[1:-1]
                 gt_box = []
                 for row in xml_boxes:
-                    gt_box.append(int(re.search(r'\d+', row).group()))
+                    num = int(re.search(r'\d+', row).group())
+                    if 'xmin' in row: xmin=num
+                    elif 'ymin' in row: ymin = num
+                    elif 'xmax' in row: xmax = num
+                    elif 'ymax' in row: ymax = num
+                gt_box = [xmin, ymin, xmax, ymax]
                 gt_boxes.append(gt_box)
 
             gt_image_shape_rows = xml_data[size_start[0]:size_end[0]].split('\n')[1:-1]
