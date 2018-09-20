@@ -91,7 +91,7 @@ if __name__ == '__main__':
     saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
     # saver.restore(sess, './data/pretrain_model/sample.ckpt-40010')
 
-    on_memory = False
+    on_memory = True
     if on_memory:
         org_image_set = next(voc_xml_parser('./data/sample_jpg/', './data/sample_xml/', on_memory=on_memory))
         image_set = ImageSetExpand(org_image_set)
@@ -99,7 +99,10 @@ if __name__ == '__main__':
         image_set['ground_truth'] = [[np.concatenate((box, [cls])) for box, cls in zip(boxes, classes)] for boxes, classes in zip(boxes_set, classes_set)]
 
 
-        for idx, (img, img_info) in enumerate(zip(image_set['images'], image_set['image_shape'])):
+        #for idx, (img, img_info) in enumerate(zip(image_set['images'], image_set['image_shape'])):
+        for idx, (img, img_info, gt_boxes, gt_classes) in enumerate(zip(image_set['images'], image_set['image_shape'], image_set['boxes'], image_set['classes'])):
+            gts = [np.concatenate([gt_boxes[i], [get_class_idx(gt_classes[i])]]) for i in range(len(gt_boxes))]
+
             start_time = time.time()
             pred_boxes, pred_prob = sess.run(
                 [Pred_BBoxes, Pred_CLS_Prob],
