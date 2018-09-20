@@ -6,15 +6,16 @@ import re
 from ..util import find_path
 
 
-def voc_xml_parser(img_path, xml_path):
+def voc_xml_parser(img_path, xml_path, on_memory=True):
     directory_list = [img_path]
     for _, dirs, _ in os.walk(img_path):
         directory_list += dirs
 
-    images = []
-    gt_classes_batch = []
-    gt_boxes_batch = []
-    gt_image_shape_batch = []
+    if on_memory:
+        images = []
+        gt_classes_batch = []
+        gt_boxes_batch = []
+        gt_image_shape_batch = []
     for _, _, files in os.walk(xml_path):
         for filename in files:
             xml_data = ''
@@ -36,7 +37,6 @@ def voc_xml_parser(img_path, xml_path):
             imagename = xml_data[file_start+len('<filename>'):file_end]
             imagepath = find_path(directory_list, imagename)
             image = cv2.imread(imagepath)
-            images.append(image)
 
             true_idx = []
             for i, row in enumerate(names_start):
@@ -68,13 +68,15 @@ def voc_xml_parser(img_path, xml_path):
                 elif 'width' in row:
                     width = int(re.search(r'\d+', row).group())
 
-            gt_classes_batch.append(np.array(gt_classes))
-            gt_boxes_batch.append(np.array(gt_boxes))
-            gt_image_shape_batch.append(np.array([height, width], dtype=np.float32))
-    images = np.array(images)
-    gt_classes_batch = np.array(gt_classes_batch)
-    gt_boxes_batch = np.array(gt_boxes_batch)
+            if on_memory:
+                images.append(image)
+                gt_classes_batch.append(np.array(gt_classes))
+                gt_boxes_batch.append(np.array(gt_boxes))
+                gt_image_shape_batch.append(np.array([height, width], dtype=np.float32))
+            else:
+                image_set = {'images': [np.array(image)], 'image_shape': [np.array([height, width], dtype=np.float32)], 'classes': [np.array(gt_classes)], 'boxes': [np.array(gt_boxes)]}
+                yield image_set
 
-    xmls = {'images': images, 'image_shape': gt_image_shape_batch, 'classes': gt_classes_batch, 'boxes':gt_boxes_batch}
-
-    return xmls
+    if on_memory:
+        image_set = {'images': images, 'image_shape': gt_image_shape_batch, 'classes': gt_classes_batch, 'boxes': gt_boxes_batch}
+        yield image_set
