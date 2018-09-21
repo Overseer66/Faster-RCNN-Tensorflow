@@ -6,6 +6,7 @@ from config import config as CONFIG
 
 from DeepBuilder.util import SearchLayer
 
+from architecture.resnet import *
 from architecture.vgg import *
 from architecture.rpn import *
 from architecture.roi import *
@@ -19,6 +20,7 @@ Image = tf.placeholder(tf.float32, [None, None, None, 3], name='image')
 ImageInfo = tf.placeholder(tf.float32, [None, 3], name='image_info')
 # GroundTruth = tf.placeholder(tf.float32, [None, 5], name='ground_truth')
 ConfigKey = tf.placeholder(tf.string, name='config_key')
+
 
 # Models : VGG16, RPN, ROI
 VGG16_Builder = build.Builder(vgg16)
@@ -99,10 +101,7 @@ if __name__ == '__main__':
         image_set['ground_truth'] = [[np.concatenate((box, [cls])) for box, cls in zip(boxes, classes)] for boxes, classes in zip(boxes_set, classes_set)]
 
 
-        #for idx, (img, img_info) in enumerate(zip(image_set['images'], image_set['image_shape'])):
-        for idx, (img, img_info, gt_boxes, gt_classes) in enumerate(zip(image_set['images'], image_set['image_shape'], image_set['boxes'], image_set['classes'])):
-            gts = [np.concatenate([gt_boxes[i], [get_class_idx(gt_classes[i])]]) for i in range(len(gt_boxes))]
-
+        for idx, (img, img_info) in enumerate(zip(image_set['images'], image_set['image_shape'])):
             start_time = time.time()
             pred_boxes, pred_prob = sess.run(
                 [Pred_BBoxes, Pred_CLS_Prob],
