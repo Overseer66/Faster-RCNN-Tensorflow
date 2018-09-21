@@ -6,7 +6,7 @@ from config import config as CONFIG
 
 from DeepBuilder.util import SearchLayer
 
-from architecture.resnet import *
+from architecture.inception_v4 import *
 from architecture.vgg import *
 from architecture.rpn import *
 from architecture.roi import *
@@ -23,6 +23,21 @@ ConfigKey = tf.placeholder(tf.string, name='config_key')
 
 
 # Models : VGG16, RPN, ROI
+Stem_Builder = build.Builder(Stem)
+Stem_LastLayer, Stem_Layers, Stem_Params = Stem_Builder(Image)
+
+ModuleA_Builder = build.Builder(ModuleA)
+ModuleA_LastLayer = Stem_LastLayer
+for idx in range(4): ModuleA_LastLayer, ModuleA_Layers, ModuleA_Params = ModuleA_Builder([[ModuleA_LastLayer],['moduleA_input']], scope='ModuleA_%d'%idx)
+ModuleA_reduction_Builder = build.Builder(ModuleA_reduction)
+ModuleA_reduction_LastLayer, ModuleA_reduction_Layers, ModuleA_reduction_Params = ModuleA_reduction_Builder([[ModuleA_LastLayer],['moduleA_reduction_input']])
+
+
+# ModuleA_Builder = build.Builder(ModuleA)
+# LastLayer = Image
+# for idx in range(3):
+#     LastLayer, MA_1_Layers, MA_1_Params = ModuleA_Builder(LastLayer, name='ModuleA_%d' % idx)
+
 VGG16_Builder = build.Builder(vgg16)
 VGG16_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image)
 
@@ -90,12 +105,12 @@ if __name__ == '__main__':
     
     #tf.global_variables_initializer().run(session=sess)
     saver = tf.train.Saver()
-    saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
+    saver.restore(sess, 'data/model/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
     # saver.restore(sess, './data/pretrain_model/sample.ckpt-40010')
 
     on_memory = False
     if on_memory:
-        org_image_set = next(voc_xml_parser('./data/sample_jpg/', './data/sample_xml/', on_memory=on_memory))
+        org_image_set = next(voc_xml_parser('./data/data/sample_10/jpg/', './data/data/sample_10/xml/', on_memory=on_memory))
         image_set = ImageSetExpand(org_image_set)
         boxes_set, classes_set = image_set['boxes'], np.array([[get_class_idx(cls) for cls in classes] for classes in image_set['classes']])
         image_set['ground_truth'] = [[np.concatenate((box, [cls])) for box, cls in zip(boxes, classes)] for boxes, classes in zip(boxes_set, classes_set)]
@@ -129,7 +144,7 @@ if __name__ == '__main__':
                 dets = dets[keep, :]
                 vis_detections(img, get_class_name(idx-1), dets, ax)
     else:
-        for idx, org_image_set in enumerate(voc_xml_parser('./data/sample_jpg/', './data/sample_xml/', on_memory=on_memory)):
+        for idx, org_image_set in enumerate(voc_xml_parser('./data/data/sample_10/jpg/', './data/data/sample_10/xml/', on_memory=on_memory)):
             image_set = ImageSetExpand(org_image_set)
             boxes_set, classes_set = image_set['boxes'], np.array([[get_class_idx(cls) for cls in classes] for classes in image_set['classes']])
             image_set['ground_truth'] = [[np.concatenate((box, [cls])) for box, cls in zip(boxes, classes)] for boxes, classes in zip(boxes_set, classes_set)]
