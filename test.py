@@ -23,19 +23,19 @@ ConfigKey = tf.placeholder(tf.string, name='config_key')
 
 
 # Test
-Resnet_Builder = build.Builder(resnet34)
-Resnet34_LastLayer, Resnet34_Layers, Resnet34_params = Resnet_Builder(Image)
+Resnet_Builder = build.Builder(resnet50)
+Resnet50_LastLayer, Resnet34_Layers, Resnet50_params = Resnet_Builder(Image)
 
 
 # Models : VGG16, RPN, ROI
-VGG16_Builder = build.Builder(vgg16)
-VGG16_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image)
+# VGG16_Builder = build.Builder(vgg16)
+# VGG16_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image)
 
 RPN_Builder = build.Builder(rpn_test)
-RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, ConfigKey, VGG16_LastLayer], ['image_info', 'config_key', 'conv5_3']])
+RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, ConfigKey, Resnet50_LastLayer], ['image_info', 'config_key', 'conv5_3']])
 
 ROI_Builder = build.Builder(roi_test)
-Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[ImageInfo, VGG16_LastLayer, RPN_Proposal_BBoxes], ['image_info', 'conv5_3', 'rpn_proposal_bboxes']])
+Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[ImageInfo, Resnet50_LastLayer, RPN_Proposal_BBoxes], ['image_info', 'conv5_3', 'rpn_proposal_bboxes']])
 Pred_CLS_Prob = SearchLayer(ROI_Layers, 'cls_prob')
 
 
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     
     #tf.global_variables_initializer().run(session=sess)
     saver = tf.train.Saver()
-    saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
+    # saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
     # saver.restore(sess, './data/pretrain_model/sample.ckpt-40010')
 
     on_memory = False
