@@ -22,6 +22,11 @@ ImageInfo = tf.placeholder(tf.float32, [None, 3], name='image_info')
 ConfigKey = tf.placeholder(tf.string, name='config_key')
 
 
+# Test
+Resnet_Builder = build.Builder(resnet34)
+Resnet34_LastLayer, Resnet34_Layers, Resnet34_params = Resnet_Builder(Image)
+
+
 # Models : VGG16, RPN, ROI
 VGG16_Builder = build.Builder(vgg16)
 VGG16_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image)
