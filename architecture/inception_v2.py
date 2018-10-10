@@ -4,36 +4,26 @@ from architecture import layer_temp
 # This code is made according to codes provided by Tensorflow.
 # Marked as footnotes is the code made according to the paper.
 
-InceptionV2_Stem = (
+InceptionV2 = (
+
+    # Stem
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [7, 7, -1, 64], 'stride_size':[1, 2, 2, 1], 'padding':'SAME', 'name': 'stem_1_conv'}},
     {'method': layer.max_pool, 'kwargs': {'kernel_size': [1, 3, 3, 1], 'stride_size': [1, 2, 2, 1], 'padding': 'SAME', 'name': 'stem_2_maxpool'}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 64], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'stem_3_conv'}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 192], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'stem_4_conv'}},
     {'method': layer.max_pool, 'kwargs': {'kernel_size': [1, 3, 3, 1], 'stride_size': [1, 2, 2, 1], 'padding': 'SAME', 'name': 'stem_5_maxpool'}},
-)
 
-# InceptionV2_Stem = (
-#     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 32], 'stride_size':[1, 2, 2, 1], 'padding':'VALID', 'name': 'stem_1_conv'}},
-#     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 32], 'stride_size':[1, 1, 1, 1], 'padding':'VALID', 'name': 'stem_2_conv'}},
-#     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 64], 'stride_size':[1, 1, 1, 1], 'padding':'SAME', 'name': 'stem_3_conv'}},
-#     {'method': layer.max_pool, 'kwargs': {'kernel_size': [1, 3, 3, 1], 'stride_size': [1, 2, 2, 1], 'padding': 'VALID', 'name': 'stem_4_maxpool'}},
-#     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 80], 'stride_size': [1, 1, 1, 1], 'padding': 'VALID', 'name': 'stem_5_conv'}},
-#     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 192], 'stride_size': [1, 2, 2, 1], 'padding': 'VALID', 'name': 'stem_6_conv'}},
-#     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 288], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'stem_7_conv'}},
-# )
-
-InceptionV2_ModuleA = (
-    {'method': util.AppendInputs, },
-    {'method': util.LayerSelector, 'kwargs': {'names': ['moduleA_input']}},
+    # Moduel A
+    {'method': util.LayerSelector, 'kwargs': {'names': ['stem_5_maxpool']}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 64], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleA_a_1_conv'}},
-    {'method': util.LayerSelector, 'kwargs': {'names': ['moduleA_input']}},
+    {'method': util.LayerSelector, 'kwargs': {'names': ['stem_5_maxpool']}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 64], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleA_a_2_1_conv'}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 64], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleA_a_2_2_conv'}},
-    {'method': util.LayerSelector, 'kwargs': {'names': ['moduleA_input']}},
+    {'method': util.LayerSelector, 'kwargs': {'names': ['stem_5_maxpool']}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 64], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleA_a_3_1_conv'}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 96], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleA_a_3_2_conv'}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 96], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleA_a_3_3_conv'}},
-    {'method': util.LayerSelector, 'kwargs': {'names': ['moduleA_input']}},
+    {'method': util.LayerSelector, 'kwargs': {'names': ['stem_5_maxpool']}},
     {'method': layer_temp.avg_pool, 'kwargs': {'kernel_size': [1, 3, 3, 1], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleA_a_4_1_avgpool'}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 32], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleA_a_4_2_conv'}},
     {'method': util.LayerSelector, 'kwargs': {'names': ['moduleA_a_1_conv', 'moduleA_a_2_2_conv', 'moduleA_a_3_3_conv', 'moduleA_a_4_2_conv']}},
@@ -65,20 +55,18 @@ InceptionV2_ModuleA = (
     {'method': layer.max_pool, 'kwargs': {'kernel_size': [1, 3, 3, 1], 'stride_size': [1, 2, 2, 1], 'padding': 'SAME', 'name': 'moduleA_c_3_maxpool'}},
     {'method': util.LayerSelector, 'kwargs': {'names': ['moduleA_c_1_2_conv', 'moduleA_c_2_3_conv', 'moduleA_c_3_maxpool']}},
     {'method': activation.Concatenate, 'kwargs': {'name': 'ModuleA_c_concat'}},
-)
 
-InceptionV2_ModuleB = (
-    {'method': util.AppendInputs, },
-    {'method': util.LayerSelector, 'kwargs': {'names': ['moduleB_input']}},
+    # Module B
+    {'method': util.LayerSelector, 'kwargs': {'names': ['ModuleA_c_concat']}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 224], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleB_a_1_conv'}},
-    {'method': util.LayerSelector, 'kwargs': {'names': ['moduleB_input']}},
+    {'method': util.LayerSelector, 'kwargs': {'names': ['ModuleA_c_concat']}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 64], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleB_a_2_1_conv'}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 96], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleB_a_2_2_conv'}},
-    {'method': util.LayerSelector, 'kwargs': {'names': ['moduleB_input']}},
+    {'method': util.LayerSelector, 'kwargs': {'names': ['ModuleA_c_concat']}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 96], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleB_a_3_1_conv'}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 128], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleB_a_3_2_conv'}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 128], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleB_a_3_3_conv'}},
-    {'method': util.LayerSelector, 'kwargs': {'names': ['moduleB_input']}},
+    {'method': util.LayerSelector, 'kwargs': {'names': ['ModuleA_c_concat']}},
     {'method': layer_temp.avg_pool, 'kwargs': {'kernel_size': [1, 3, 3, 1], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleB_a_4_1_avgpool'}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 128], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleB_a_4_2_conv'}},
     {'method': util.LayerSelector, 'kwargs': {'names': ['moduleB_a_1_conv', 'moduleB_a_2_2_conv', 'moduleB_a_3_3_conv', 'moduleB_a_4_2_conv']}},
@@ -141,6 +129,46 @@ InceptionV2_ModuleB = (
     {'method': util.LayerSelector, 'kwargs': {'names': ['moduleB_e_1_2_conv', 'moduleB_e_2_3_conv', 'moduleB_e_3_maxpool']}},
     {'method': activation.Concatenate, 'kwargs': {'name': 'ModuleB_e_concat'}},
 
+    # Module C
+    {'method': util.LayerSelector, 'kwargs': {'names': ['ModuleB_e_concat']}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 352], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_1_conv'}},
+    {'method': util.LayerSelector, 'kwargs': {'names': ['ModuleB_e_concat']}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 192], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_2_1_conv'}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 320], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_2_2_conv'}},
+    {'method': util.LayerSelector, 'kwargs': {'names': ['ModuleB_e_concat']}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 160], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_3_1_conv'}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 224], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_3_2_conv'}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 224], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_3_3_conv'}},
+    {'method': util.LayerSelector, 'kwargs': {'names': ['ModuleB_e_concat']}},
+    {'method': layer_temp.avg_pool, 'kwargs': {'kernel_size': [1, 3, 3, 1], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_4_1_avgpool'}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 128], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_4_2_conv'}},
+    {'method': util.LayerSelector, 'kwargs': {'names': ['moduleC_a_1_conv', 'moduleC_a_2_2_conv', 'moduleC_a_3_3_conv', 'moduleC_a_4_2_conv']}},
+    {'method': activation.Concatenate, 'kwargs': {'name': 'ModuleC_a_concat'}},
+
+    {'method': util.LayerSelector, 'kwargs': {'names': ['ModuleC_a_concat']}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 352], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_b_1_conv'}},
+    {'method': util.LayerSelector, 'kwargs': {'names': ['ModuleC_a_concat']}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 192], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_b_2_1_conv'}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 320], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_b_2_2_conv'}},
+    {'method': util.LayerSelector, 'kwargs': {'names': ['ModuleC_a_concat']}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 160], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_b_3_1_conv'}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 224], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_b_3_2_conv'}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 224], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_b_3_3_conv'}},
+    {'method': util.LayerSelector, 'kwargs': {'names': ['ModuleC_a_concat']}},
+    {'method': layer.max_pool, 'kwargs': {'kernel_size': [1, 3, 3, 1], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_4_1_maxpool'}},
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 128], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_b_4_2_conv'}},
+    {'method': util.LayerSelector, 'kwargs': {'names': ['moduleC_b_1_conv', 'moduleC_b_2_2_conv', 'moduleC_b_3_3_conv', 'moduleC_b_4_2_conv']}},
+    {'method': activation.Concatenate, 'kwargs': {'name': 'ModuleC_b_concat'}},
+
+    # InceptionV2_Stem = (
+    #     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 32], 'stride_size':[1, 2, 2, 1], 'padding':'VALID', 'name': 'stem_1_conv'}},
+    #     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 32], 'stride_size':[1, 1, 1, 1], 'padding':'VALID', 'name': 'stem_2_conv'}},
+    #     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 64], 'stride_size':[1, 1, 1, 1], 'padding':'SAME', 'name': 'stem_3_conv'}},
+    #     {'method': layer.max_pool, 'kwargs': {'kernel_size': [1, 3, 3, 1], 'stride_size': [1, 2, 2, 1], 'padding': 'VALID', 'name': 'stem_4_maxpool'}},
+    #     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 80], 'stride_size': [1, 1, 1, 1], 'padding': 'VALID', 'name': 'stem_5_conv'}},
+    #     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 192], 'stride_size': [1, 2, 2, 1], 'padding': 'VALID', 'name': 'stem_6_conv'}},
+    #     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 288], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'stem_7_conv'}},
+    # )
     #
     # {'method': util.AppendInputs, },
     # {'method': util.LayerSelector, 'kwargs': {'names': ['moduleB_input']}},
@@ -225,40 +253,6 @@ InceptionV2_ModuleB = (
     # {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 192], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleB_e_4_2_conv'}},
     # {'method': util.LayerSelector, 'kwargs': {'names': ['moduleB_e_1_conv', 'moduleB_e_2_3_conv', 'moduleB_e_3_5_conv', 'moduleB_e_4_2_conv']}},
     # {'method': activation.Concatenate, 'kwargs': {'name': 'ModuleB_e_concat'}},
-)
-
-InceptionV2_ModuleC = (
-    {'method': util.AppendInputs, },
-    {'method': util.LayerSelector, 'kwargs': {'names': ['moduleC_input']}},
-    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 352], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_1_conv'}},
-    {'method': util.LayerSelector, 'kwargs': {'names': ['moduleC_input']}},
-    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 192], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_2_1_conv'}},
-    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 320], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_2_2_conv'}},
-    {'method': util.LayerSelector, 'kwargs': {'names': ['moduleC_input']}},
-    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 160], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_3_1_conv'}},
-    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 224], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_3_2_conv'}},
-    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 224], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_3_3_conv'}},
-    {'method': util.LayerSelector, 'kwargs': {'names': ['moduleC_input']}},
-    {'method': layer_temp.avg_pool, 'kwargs': {'kernel_size': [1, 3, 3, 1], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_4_1_avgpool'}},
-    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 128], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_4_2_conv'}},
-    {'method': util.LayerSelector, 'kwargs': {'names': ['moduleC_a_1_conv', 'moduleC_a_2_2_conv', 'moduleC_a_3_3_conv', 'moduleC_a_4_2_conv']}},
-    {'method': activation.Concatenate, 'kwargs': {'name': 'ModuleC_a_concat'}},
-
-    {'method': util.LayerSelector, 'kwargs': {'names': ['ModuleC_a_concat']}},
-    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 352], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_b_1_conv'}},
-    {'method': util.LayerSelector, 'kwargs': {'names': ['ModuleC_a_concat']}},
-    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 192], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_b_2_1_conv'}},
-    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 320], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_b_2_2_conv'}},
-    {'method': util.LayerSelector, 'kwargs': {'names': ['ModuleC_a_concat']}},
-    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 160], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_b_3_1_conv'}},
-    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 224], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_b_3_2_conv'}},
-    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 224], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_b_3_3_conv'}},
-    {'method': util.LayerSelector, 'kwargs': {'names': ['ModuleC_a_concat']}},
-    {'method': layer.max_pool, 'kwargs': {'kernel_size': [1, 3, 3, 1], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_4_1_maxpool'}},
-    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 128], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_b_4_2_conv'}},
-    {'method': util.LayerSelector, 'kwargs': {'names': ['moduleC_b_1_conv', 'moduleC_b_2_2_conv', 'moduleC_b_3_3_conv', 'moduleC_b_4_2_conv']}},
-    {'method': activation.Concatenate, 'kwargs': {'name': 'ModuleC_b_concat'}},
-
     # {'method': util.AppendInputs, },
     # {'method': util.LayerSelector, 'kwargs': {'names': ['moduleC_input']}},
     # {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 192], 'stride_size': [1, 1, 1, 1], 'padding': 'SAME', 'name': 'moduleC_a_1_1_conv'}},

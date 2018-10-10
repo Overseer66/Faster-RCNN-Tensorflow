@@ -37,7 +37,7 @@ ImageInfo = tf.placeholder(tf.float32, [None, 3], name='image_info')
 GroundTruth = tf.placeholder(tf.float32, [None, 5], name='ground_truth')
 ConfigKey = tf.placeholder(tf.string, name='config_key')
 
-CNN_model = 'InceptionV2'
+CNN_model = 'VGG16'
 
 if CNN_model == 'VGG16':
     VGG16_Builder = build.Builder(vgg16)
@@ -47,19 +47,10 @@ if CNN_model == 'VGG16':
 
 elif CNN_model == 'InceptionV2':
 
-    Stem_Builder = build.Builder(InceptionV2_Stem)
-    Stem_LastLayer, Stem_Layers, Stem_Params = Stem_Builder(Image)
+    InceptionV2_Builder = build.Builder(InceptionV2)
+    InceptionV2_LastLayer, InceptionV2_Layers, InceptionV2_Params = InceptionV2_Builder(Image)
 
-    ModuleA_Builder = build.Builder(InceptionV2_ModuleA)
-    ModuleA_LastLayer, ModuleA_Layers, ModuleA_Params = ModuleA_Builder([[Stem_LastLayer], ['moduleA_input']], scope='ModuleA')
-
-    ModuleB_Builder = build.Builder(InceptionV2_ModuleB)
-    ModuleB_LastLayer, ModuleB_Layers, ModuleB_Params = ModuleB_Builder([[ModuleA_LastLayer], ['moduleB_input']], scope='ModuleB')
-
-    ModuleC_Builder = build.Builder(InceptionV2_ModuleC)
-    ModuleC_LastLayer, ModuleC_Layers, ModuleC_Params = ModuleC_Builder([[ModuleB_LastLayer], ['moduleC_input']], scope='ModuleC')
-
-    CNN_LastLayer = ModuleC_LastLayer
+    CNN_LastLayer = InceptionV2_LastLayer
 
 elif CNN_model == 'InceptionV4':
     Stem_Builder = build.Builder(InceptionV4_Stem)
@@ -86,7 +77,7 @@ elif CNN_model == 'InceptionV4':
     for idx in range(3): ModuleC_LastLayer, ModuleC_Layers, ModuleC_Params = ModuleC_Builder(
         [[ModuleC_LastLayer], ['moduleC_input']], scope='ModuleC_%d' % idx)
 
-    CNN_LastLayer = ModuleB_LastLayer
+    CNN_LastLayer = ModuleC_LastLayer
 
 # Train Model
 RPN_Builder = build.Builder(rpn_train)
@@ -134,8 +125,7 @@ final_loss = rpn_cls_loss + rpn_bbox_loss + rcnn_cls_loss + rcnn_bbox_loss
 
 global_step = tf.Variable(0, trainable=False)
 lr = tf.train.exponential_decay(CONFIG.TRAIN.LEARNING_RATE, global_step, CONFIG.TRAIN.STEPSIZE, 0.1, staircase=True)
-momentum = CONFIG.TRAIN.MOMENTUM
-train_op = tf.train.MomentumOptimizer(lr, momentum).minimize(final_loss, global_step=global_step)
+train_op = tf.train.MomentumOptimizer(lr, CONFIG.TRAIN.MOMENTUM).minimize(final_loss, global_step=global_step)
 
 def run_sess(img, img_info, gts):
 
@@ -149,6 +139,7 @@ def run_sess(img, img_info, gts):
     #         ConfigKey: 'TRAIN',
     #     }
     # )
+
     global_step_v, final_loss_v, _ = sess.run(
         [global_step, final_loss, train_op],
         {
@@ -158,6 +149,7 @@ def run_sess(img, img_info, gts):
             ConfigKey: 'TRAIN',
         }
     )
+
     end_time = time.time()
 
     print("-" * 50)

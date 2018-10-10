@@ -9,8 +9,9 @@ from DeepBuilder.util import SearchLayer
 from lib.util import ModifiedSmoothL1
 
 from architecture.vgg import *
-from architecture.vgg_temp import *
+from architecture.inception_v2 import *
 from architecture.inception_v4 import *
+from architecture.mobilenet import *
 from architecture.combined import *
 from architecture.rpn import *
 from architecture.roi import *
@@ -26,97 +27,106 @@ ConfigKey = tf.placeholder(tf.string, name='config_key')
 # Models : VGG16, RPN, ROI
 
 #VGG16
-with tf.device('/gpu:0'):
-    VGG16_Builder_1 = build.Builder(vgg16_1)
-    VGG16_LastLayer_1, VGG16_Layers_1, VGG16_Params_1 = VGG16_Builder_1(Image)
+VGG16_Builder = build.Builder(vgg16)
+VGG16_LastLayer_1, VGG16_Layers_1, VGG16_Params_1 = VGG16_Builder(Image, scope="VGG_1")
+VGG16_LastLayer_2, VGG16_Layers_2, VGG16_Params_2 = VGG16_Builder(Image, scope="VGG_2")
+VGG16_LastLayer_3, VGG16_Layers_3, VGG16_Params_3 = VGG16_Builder(Image, scope="VGG_3")
 
-with tf.device('/gpu:1'):
-    VGG16_Builder_2 = build.Builder(vgg16_2)
-    VGG16_LastLayer_2, VGG16_Layers_2, VGG16_Params_2 = VGG16_Builder_2(Image)
 
-    VGG16_Builder_3 = build.Builder(vgg16_3)
-    VGG16_LastLayer_3, VGG16_Layers_3, VGG16_Params_3 = VGG16_Builder_3(Image)
+Mobilenet_Builder = build.Builder(mobilenet)
+Mobilenet_LastLayer_1, Mobilenet_Layers_1, Mobilenet_Params_1 = Mobilenet_Builder(Image, scope="Mobilenet_1")
+Mobilenet_LastLayer_2, Mobilenet_Layers_2, Mobilenet_Params_2 = Mobilenet_Builder(Image, scope="Mobilenet_2")
+Mobilenet_LastLayer_3, Mobilenet_Layers_3, Mobilenet_Params_3 = Mobilenet_Builder(Image, scope="Mobilenet_3")
+Mobilenet_LastLayer_4, Mobilenet_Layers_4, Mobilenet_Params_4 = Mobilenet_Builder(Image, scope="Mobilenet_4")
+Mobilenet_LastLayer_5, Mobilenet_Layers_5, Mobilenet_Params_5 = Mobilenet_Builder(Image, scope="Mobilenet_5")
+Mobilenet_LastLayer_6, Mobilenet_Layers_6, Mobilenet_Params_6 = Mobilenet_Builder(Image, scope="Mobilenet_6")
 
-'''
-#InceptionV4
+InceptionV2_Builder = build.Builder(InceptionV2)
+InceptionV2_LastLayer, InceptionV2_Layers, InceptionV2_Params = InceptionV2_Builder(Image, scope="InceptionV2")
+
 Stem_Builder = build.Builder(InceptionV4_Stem)
 Stem_LastLayer, Stem_Layers, Stem_Params = Stem_Builder(Image)
 
 ModuleA_Builder = build.Builder(InceptionV4_ModuleA)
 ModuleA_LastLayer = Stem_LastLayer
-for idx in range(4): ModuleA_LastLayer, ModuleA_Layers, ModuleA_Params = ModuleA_Builder([[ModuleA_LastLayer],['moduleA_input']], scope='ModuleA_%d'%idx)
+for idx in range(4): ModuleA_LastLayer, ModuleA_Layers, ModuleA_Params = ModuleA_Builder(
+    [[ModuleA_LastLayer], ['moduleA_input']], scope='ModuleA_%d' % idx)
 ModuleA_reduction_Builder = build.Builder(InceptionV4_ModuleA_reduction)
-ModuleA_reduction_LastLayer, ModuleA_reduction_Layers, ModuleA_reduction_Params = ModuleA_reduction_Builder([[ModuleA_LastLayer],['moduleA_reduction_input']])
+ModuleA_reduction_LastLayer, ModuleA_reduction_Layers, ModuleA_reduction_Params = ModuleA_reduction_Builder(
+    [[ModuleA_LastLayer], ['moduleA_reduction_input']])
 
 ModuleB_Builder = build.Builder(InceptionV4_ModuleB)
 ModuleB_LastLayer = ModuleA_reduction_LastLayer
-for idx in range(7): ModuleB_LastLayer, ModuleB_Layers, ModuleB_Params = ModuleB_Builder([[ModuleB_LastLayer],['moduleB_input']], scope='ModuleB_%d'%idx)
+for idx in range(7): ModuleB_LastLayer, ModuleB_Layers, ModuleB_Params = ModuleB_Builder(
+    [[ModuleB_LastLayer], ['moduleB_input']], scope='ModuleB_%d' % idx)
 ModuleB_reduction_Builder = build.Builder(InceptionV4_ModuleB_reduction)
-ModuleB_reduction_LastLayer, ModuleB_reduction_Layers, ModuleB_reduction_Params = ModuleB_reduction_Builder([[ModuleB_LastLayer],['moduleB_reduction_input']])
+ModuleB_reduction_LastLayer, ModuleB_reduction_Layers, ModuleB_reduction_Params = ModuleB_reduction_Builder(
+    [[ModuleB_LastLayer], ['moduleB_reduction_input']])
 
 ModuleC_Builder = build.Builder(InceptionV4_ModuleC)
 ModuleC_LastLayer = ModuleB_reduction_LastLayer
-for idx in range(3): ModuleC_LastLayer, ModuleC_Layers, ModuleC_Params = ModuleC_Builder([[ModuleC_LastLayer],['moduleC_input']], scope='ModuleC_%d'%idx)
-'''
+for idx in range(3): ModuleC_LastLayer, ModuleC_Layers, ModuleC_Params = ModuleC_Builder(
+    [[ModuleC_LastLayer], ['moduleC_input']], scope='ModuleC_%d' % idx)
+
 
 #Combine
-LastLayers = [VGG16_LastLayer_1, VGG16_LastLayer_2, VGG16_LastLayer_3]
-# LastLayers_shape = [tf.shape(row)[1:3] for row in LastLayers]
+LastLayers_shape = tf.shape(Mobilenet_LastLayer_1)[1:3]
 #TODO: get minimum shape and use it as target shape (even w/ 3+ models)
-# VGG16_LastLayer = tf.image.resize_images(VGG16_LastLayer, LastLayers_shape[1])
+VGG16_LastLayer_1 = tf.image.resize_images(VGG16_LastLayer_1, LastLayers_shape)
+LastLayers = [InceptionV2_LastLayer, Mobilenet_LastLayer_1, VGG16_LastLayer_1]
 
 Combined_Builder = build.Builder(Combined)
 Combined_LastLayer, Combined_Layers, Combined_Params = Combined_Builder([LastLayers, ['Input_1', 'Input_2', 'Input_3']])
 
 
-with tf.device('/gpu:0'):
-    RPN_Builder = build.Builder(rpn_train)
-    RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, GroundTruth, ConfigKey, Combined_LastLayer], ['image_info', 'ground_truth', 'config_key', 'conv5_3']])
+# with tf.device('/gpu:0'):
+RPN_Builder = build.Builder(rpn_train)
+RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, GroundTruth, ConfigKey, Combined_LastLayer], ['image_info', 'ground_truth', 'config_key', 'conv5_3']])
 
-    ROI_Builder = build.Builder(roi_train)
-    Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[Combined_LastLayer, RPN_Proposal_BBoxes, GroundTruth, ConfigKey], ['conv5_3', 'rpn_proposal_bboxes', 'ground_truth', 'config_key']])
-    Pred_CLS_Prob = SearchLayer(ROI_Layers, 'cls_prob')
+ROI_Builder = build.Builder(roi_train)
+Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[Combined_LastLayer, RPN_Proposal_BBoxes, GroundTruth, ConfigKey], ['conv5_3', 'rpn_proposal_bboxes', 'ground_truth', 'config_key']])
+Pred_CLS_Prob = SearchLayer(ROI_Layers, 'cls_prob')
 
-    # LOSS
-    # RPN_class
-    rpn_anchor_target = SearchLayer(RPN_Layers, 'anchor_target_layer')
-    rpn_cls_score = SearchLayer(RPN_Layers, 'rpn_cls_score_reshape')
-    rpn_cls_score = tf.reshape(rpn_cls_score, [-1,2])
-    rpn_cls_label = tf.reshape(rpn_anchor_target[0],[-1])
-    rpn_cls_score = tf.reshape(tf.gather(rpn_cls_score,tf.where(tf.not_equal(rpn_cls_label,-1))),[-1,2])
-    rpn_cls_label = tf.reshape(tf.gather(rpn_cls_label,tf.where(tf.not_equal(rpn_cls_label,-1))),[-1])
-    rpn_cls_label = tf.cast(rpn_cls_label, dtype=tf.int32)
-    rpn_cls_loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=rpn_cls_score, labels=rpn_cls_label))
+# LOSS
+# RPN_class
+rpn_anchor_target = SearchLayer(RPN_Layers, 'anchor_target_layer')
+rpn_cls_score = SearchLayer(RPN_Layers, 'rpn_cls_score_reshape')
+rpn_cls_score = tf.reshape(rpn_cls_score, [-1,2])
+rpn_cls_label = tf.reshape(rpn_anchor_target[0],[-1])
+rpn_cls_score = tf.reshape(tf.gather(rpn_cls_score,tf.where(tf.not_equal(rpn_cls_label,-1))),[-1,2])
+rpn_cls_label = tf.reshape(tf.gather(rpn_cls_label,tf.where(tf.not_equal(rpn_cls_label,-1))),[-1])
+rpn_cls_label = tf.cast(rpn_cls_label, dtype=tf.int32)
+rpn_cls_loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=rpn_cls_score, labels=rpn_cls_label))
 
-    # RPN_bbox
-    rpn_bbox_pred = SearchLayer(RPN_Layers, 'rpn_bbox_pred')
-    rpn_bbox_target = tf.transpose(rpn_anchor_target[1],[0,2,3,1])
-    rpn_bbox_inside = tf.transpose(rpn_anchor_target[2],[0,2,3,1])
-    rpn_bbox_outside = tf.transpose(rpn_anchor_target[3],[0,2,3,1])
-    rpn_bbox_l1 = ModifiedSmoothL1(3.0, rpn_bbox_pred, rpn_bbox_target, rpn_bbox_inside, rpn_bbox_outside)
-    rpn_bbox_loss = tf.reduce_mean(tf.reduce_sum(rpn_bbox_l1, reduction_indices=[1, 2, 3]))
+# RPN_bbox
+rpn_bbox_pred = SearchLayer(RPN_Layers, 'rpn_bbox_pred')
+rpn_bbox_target = tf.transpose(rpn_anchor_target[1],[0,2,3,1])
+rpn_bbox_inside = tf.transpose(rpn_anchor_target[2],[0,2,3,1])
+rpn_bbox_outside = tf.transpose(rpn_anchor_target[3],[0,2,3,1])
+rpn_bbox_l1 = ModifiedSmoothL1(3.0, rpn_bbox_pred, rpn_bbox_target, rpn_bbox_inside, rpn_bbox_outside)
+rpn_bbox_loss = tf.reduce_mean(tf.reduce_sum(rpn_bbox_l1, reduction_indices=[1, 2, 3]))
 
-    # RCNN_class
-    rcnn_proposal_target = SearchLayer(ROI_Layers, 'proposal_target_layer')
-    rcnn_cls_score = SearchLayer(ROI_Layers, 'cls_score')
-    rcnn_cls_label = rcnn_proposal_target[1]
-    rcnn_cls_label = tf.cast(tf.reshape(rcnn_cls_label, [-1]), dtype=tf.int32)
-    rcnn_cls_loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=rcnn_cls_score, labels=rcnn_cls_label))
+# RCNN_class
+rcnn_proposal_target = SearchLayer(ROI_Layers, 'proposal_target_layer')
+rcnn_cls_score = SearchLayer(ROI_Layers, 'cls_score')
+rcnn_cls_label = rcnn_proposal_target[1]
+rcnn_cls_label = tf.cast(tf.reshape(rcnn_cls_label, [-1]), dtype=tf.int32)
+rcnn_cls_loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=rcnn_cls_score, labels=rcnn_cls_label))
 
-    # RCNN_bbox
-    rcnn_bbox_pred = SearchLayer(ROI_Layers, 'bbox_pred')
-    rcnn_bbox_target = rcnn_proposal_target[2]
-    rcnn_bbox_inside = rcnn_proposal_target[3]
-    rcnn_bbox_outside = rcnn_proposal_target[4]
-    rcnn_bbox_l1 = ModifiedSmoothL1(1.0, rcnn_bbox_pred, rcnn_bbox_target, rcnn_bbox_inside, rcnn_bbox_outside)
-    rcnn_bbox_loss = tf.reduce_mean(tf.reduce_sum(rcnn_bbox_l1, reduction_indices=[1]))
+# RCNN_bbox
+rcnn_bbox_pred = SearchLayer(ROI_Layers, 'bbox_pred')
+rcnn_bbox_target = rcnn_proposal_target[2]
+rcnn_bbox_inside = rcnn_proposal_target[3]
+rcnn_bbox_outside = rcnn_proposal_target[4]
+rcnn_bbox_l1 = ModifiedSmoothL1(1.0, rcnn_bbox_pred, rcnn_bbox_target, rcnn_bbox_inside, rcnn_bbox_outside)
+rcnn_bbox_loss = tf.reduce_mean(tf.reduce_sum(rcnn_bbox_l1, reduction_indices=[1]))
 
-    final_loss = rpn_cls_loss + rpn_bbox_loss + rcnn_cls_loss + rcnn_bbox_loss
+final_loss = rpn_cls_loss + rpn_bbox_loss + rcnn_cls_loss + rcnn_bbox_loss
 
-    global_step = tf.Variable(0, trainable=False)
-    lr = tf.train.exponential_decay(CONFIG.TRAIN.LEARNING_RATE, global_step, CONFIG.TRAIN.STEPSIZE, 0.1, staircase=True)
-    momentum = CONFIG.TRAIN.MOMENTUM
-    train_op = tf.train.MomentumOptimizer(lr, momentum).minimize(final_loss, global_step=global_step)
+global_step = tf.Variable(0, trainable=False)
+lr = tf.train.exponential_decay(CONFIG.TRAIN.LEARNING_RATE, global_step, CONFIG.TRAIN.STEPSIZE, 0.1, staircase=True)
+momentum = CONFIG.TRAIN.MOMENTUM
+train_op = tf.train.MomentumOptimizer(lr, momentum).minimize(final_loss, global_step=global_step)
 
 def get_class_idx(name):
     class_names = ['aeroplane', 'bicycle', 'bird', 'boat',
