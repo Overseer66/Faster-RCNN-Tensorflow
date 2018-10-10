@@ -3,73 +3,111 @@ import tensorflow as tf
 from DeepBuilder import layer, activation, build, util
 
 
-def get_resnet_dict(repeat, depth, step=2, kernel_size=(3,3), numbering=''):
+def ResnetBlockV1(repeat, depth, numbering=''):
     numbering = str(numbering)
-    resnet_dict = {
-        # Repeat : Residual X 3
-        # Residual : 3x3(64) ConvLayer X 2
-        # Total 6 layers
-        'method': layer.repeat,
-        'kwargs': {
-            'count': repeat,
-            'layer_dict': {
-                'method': layer.residual,
-                'kwargs': {
-                    'layer_dict': {
-                        'method': layer.conv_2d, 'kwargs': {'kernel_size': [kernel_size[0], kernel_size[1], -1, depth], 'name': 'resnet%s_conv' % numbering}
+    ResBlock = (
+        {
+            # Repeat : Residual X 3
+            # Residual : 3x3(64) ConvLayer X 2
+            # Total 6 layers
+            'method': layer.repeat,
+            'kwargs': {
+                'count': repeat,
+                'layer_dict': {
+                    'method': layer.residual,
+                    'kwargs': {
+                        'layer_dict': {
+                            'method': layer.conv_2d, 'kwargs': {'kernel_size': (3, 3, -1, depth), 'name': 'resnet%s_conv' % numbering}
+                        },
+                        'name': 'residual'+numbering,
                     },
-                    'step': step,
-                    'name': 'residual'+numbering,
                 },
+                'name': 'resblock'+numbering,
             },
-            'name': 'resblock'+numbering,
         },
-    }
-    return resnet_dict
+    )
+    return ResBlock
 
 
-def get_resnet_arch(repeat, depth, step=2, kernel_size=(3,3)):
-    resnet_block = (get_resnet_dict(repeat, depth, step, kernel_size))
-    return resnet_block
-
-
-def get_projectshortcut_dict(depth, step=2, numbering=''):
+def ResnetBlockV2(repeat, depth, numbering=''):
     numbering = str(numbering)
-    project_shortcut_dict = {
-        'method': layer.project_shortcut,
-        'kwargs': {
-            'layer_dict': {
-                'method': layer.conv_2d,
-                'kwargs': {
-                    'kernel_size': [3, 3, -1, depth]
-                }
+    ResBlock = ()
+    for idx in range(repeat):
+        ResBlock += (
+            {'method': layer.conv_2d, 'kwargs': {'kernel_size': (1, 1, -1, depth), 'name': 'resblock_%d_resnet%s_conv1' % (idx, numbering)}},
+            {'method': layer.conv_2d, 'kwargs': {'kernel_size': (3, 3, -1, depth), 'name': 'resblock_%d_resnet%s_conv2' % (idx, numbering)}},
+            {'method': layer.conv_2d, 'kwargs': {'kernel_size': (1, 1, -1, depth*4), 'name': 'resblock_%d_resnet%s_conv3' % (idx, numbering)}},
+        )
+    return ResBlock
+
+
+def ProjectShortcut(depth, numbering=''):
+    numbering = str(numbering)
+    ps = (
+        {
+            'method': layer.project_shortcut,
+            'kwargs': {
+                'layer_dict': {
+                    'method': layer.conv_2d,
+                    'kwargs': {
+                        'kernel_size': [3, 3, -1, depth]
+                    }
+                },
+                'depth': depth,
+                'name': 'resblock%s_ps' % numbering
             },
-            'depth': depth,
-            'step': step,
-            'name': 'resblock%s_ps' % numbering
         },
-    }
-    return project_shortcut_dict
+    )
+    return ps
+
+
+resnet34 = (
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [7, 7, -1, 64], 'name': 'conv1'}},
+    {'method': layer.max_pool, 'kwargs': {'padding': 'VALID', 'name': 'pool1'}},
+) +\
+ResnetBlockV1(3, 64, numbering=1) +\
+ProjectShortcut(128, numbering=2) +\
+ResnetBlockV1(3, 128, numbering=2) +\
+ProjectShortcut(256, numbering=3) +\
+ResnetBlockV1(5, 256, numbering=3) +\
+ProjectShortcut(512, numbering=4) +\
+ResnetBlockV1(2, 512, numbering=4)
 
 
 resnet50 = (
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [7, 7, -1, 64], 'name': 'conv1'}},
     {'method': layer.max_pool, 'kwargs': {'padding': 'VALID', 'name': 'pool1'}},
-    
-    # 9 Layers
-    get_resnet_dict(3, 64, numbering=1),
-
-    # 12 Layers
-    get_projectshortcut_dict(128, numbering=2),
-    get_resnet_dict(3, 128, numbering=2),
-    
-    # 18 Layers
-    get_projectshortcut_dict(256, numbering=3),
-    get_resnet_dict(5, 256, numbering=3),
-
-    # 9 Layers
-    get_projectshortcut_dict(512, numbering=4),
-    get_resnet_dict(2, 512, numbering=4),
-)
+) +\
+ResnetBlockV2(3, 64, numbering=1) +\
+ProjectShortcut(128, numbering=2) +\
+ResnetBlockV2(3, 128, numbering=2) +\
+ProjectShortcut(256, numbering=3) +\
+ResnetBlockV2(5, 256, numbering=3) +\
+ProjectShortcut(512, numbering=4) +\
+ResnetBlockV2(2, 512, numbering=4)
 
 
+resnet101 = (
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [7, 7, -1, 64], 'name': 'conv1'}},
+    {'method': layer.max_pool, 'kwargs': {'padding': 'VALID', 'name': 'pool1'}},
+) +\
+ResnetBlockV2(3, 64, numbering=1) +\
+ProjectShortcut(128, numbering=2) +\
+ResnetBlockV2(3, 128, numbering=2) +\
+ProjectShortcut(256, numbering=3) +\
+ResnetBlockV2(22, 256, numbering=3) +\
+ProjectShortcut(512, numbering=4) +\
+ResnetBlockV2(2, 512, numbering=4)
+
+
+resnet152 = (
+    {'method': layer.conv_2d, 'kwargs': {'kernel_size': [7, 7, -1, 64], 'name': 'conv1'}},
+    {'method': layer.max_pool, 'kwargs': {'padding': 'VALID', 'name': 'pool1'}},
+) +\
+ResnetBlockV2(3, 64, numbering=1) +\
+ProjectShortcut(128, numbering=2) +\
+ResnetBlockV2(7, 128, numbering=2) +\
+ProjectShortcut(256, numbering=3) +\
+ResnetBlockV2(35, 256, numbering=3) +\
+ProjectShortcut(512, numbering=4) +\
+ResnetBlockV2(2, 512, numbering=4)
