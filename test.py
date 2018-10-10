@@ -6,7 +6,7 @@ from config import config as CONFIG
 
 from DeepBuilder.util import SearchLayer
 
-from architecture.resnet import *
+from architecture.mobilenet import *
 from architecture.vgg import *
 from architecture.rpn import *
 from architecture.roi import *
@@ -22,24 +22,18 @@ ImageInfo = tf.placeholder(tf.float32, [None, 3], name='image_info')
 ConfigKey = tf.placeholder(tf.string, name='config_key')
 
 
-# Test
-# Resnet_Builder = build.Builder(resnet50)
-# Resnet50_LastLayer, Resnet34_Layers, Resnet50_params = Resnet_Builder(Image)
-# Resnet50_LastLayer_2, *_ = Resnet_Builder(Image, scope='2')
-# Resnet50_LastLayer_3, *_ = Resnet_Builder(Image, scope='3')
-
-# Resnet50_LastLayer = Resnet50_LastLayer + Resnet50_LastLayer_2 + Resnet50_LastLayer_3
-
+Mobilenet_Builder = build.Builder(mobilenet)
+Mobilenet_LastLayer, *_ = Mobilenet_Builder(Image)
 
 # Models : VGG16, RPN, ROI
 VGG16_Builder = build.Builder(vgg16)
 VGG16_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image)
 
 RPN_Builder = build.Builder(rpn_test)
-RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, ConfigKey, VGG16_LastLayer], ['image_info', 'config_key', 'conv5_3']])
+RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, ConfigKey, Mobilenet_LastLayer], ['image_info', 'config_key', 'conv5_3']])
 
 ROI_Builder = build.Builder(roi_test)
-Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[ImageInfo, VGG16_LastLayer, RPN_Proposal_BBoxes], ['image_info', 'conv5_3', 'rpn_proposal_bboxes']])
+Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[ImageInfo, Mobilenet_LastLayer, RPN_Proposal_BBoxes], ['image_info', 'conv5_3', 'rpn_proposal_bboxes']])
 Pred_CLS_Prob = SearchLayer(ROI_Layers, 'cls_prob')
 
 
