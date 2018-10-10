@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import time
+import sys
 
 from config import config as CONFIG
 
@@ -8,26 +9,91 @@ from DeepBuilder.util import SearchLayer
 from lib.util import ModifiedSmoothL1
 
 from architecture.vgg import *
+from architecture.inception_v2 import *
+from architecture.inception_v4 import *
 from architecture.rpn import *
 from architecture.roi import *
 
 from lib.database.voc_importer import *
 from lib.database.util import ImageSetExpand
 
+
+def get_class_idx(name):
+    class_names = ['aeroplane', 'bicycle', 'bird', 'boat',
+           'bottle', 'bus', 'car', 'cat', 'chair',
+           'cow', 'diningtable', 'dog', 'horse',
+           'motorbike', 'person', 'pottedplant',
+           'sheep', 'sofa', 'train', 'tvmonitor']
+    return class_names.index(name)+1
+
+
+# for gpu in [0,1]:
+#
+#     with tf.device('/gpu:'+str(gpu)):
+
+
 Image = tf.placeholder(tf.float32, [None, None, None, 3], name='image')
 ImageInfo = tf.placeholder(tf.float32, [None, 3], name='image_info')
 GroundTruth = tf.placeholder(tf.float32, [None, 5], name='ground_truth')
 ConfigKey = tf.placeholder(tf.string, name='config_key')
 
-VGG16_Builder = build.Builder(vgg16)
-VGG16_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image)
+CNN_model = 'InceptionV2'
+
+if CNN_model == 'VGG16':
+    VGG16_Builder = build.Builder(vgg16)
+    VGG16_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image)
+
+    CNN_LastLayer = VGG16_LastLayer
+
+elif CNN_model == 'InceptionV2':
+
+    Stem_Builder = build.Builder(InceptionV2_Stem)
+    Stem_LastLayer, Stem_Layers, Stem_Params = Stem_Builder(Image)
+
+    ModuleA_Builder = build.Builder(InceptionV2_ModuleA)
+    ModuleA_LastLayer, ModuleA_Layers, ModuleA_Params = ModuleA_Builder([[Stem_LastLayer], ['moduleA_input']], scope='ModuleA')
+
+    ModuleB_Builder = build.Builder(InceptionV2_ModuleB)
+    ModuleB_LastLayer, ModuleB_Layers, ModuleB_Params = ModuleB_Builder([[ModuleA_LastLayer], ['moduleB_input']], scope='ModuleB')
+
+    ModuleC_Builder = build.Builder(InceptionV2_ModuleC)
+    ModuleC_LastLayer, ModuleC_Layers, ModuleC_Params = ModuleC_Builder([[ModuleB_LastLayer], ['moduleC_input']], scope='ModuleC')
+
+    CNN_LastLayer = ModuleC_LastLayer
+
+elif CNN_model == 'InceptionV4':
+    Stem_Builder = build.Builder(InceptionV4_Stem)
+    Stem_LastLayer, Stem_Layers, Stem_Params = Stem_Builder(Image)
+
+    ModuleA_Builder = build.Builder(InceptionV4_ModuleA)
+    ModuleA_LastLayer = Stem_LastLayer
+    for idx in range(4): ModuleA_LastLayer, ModuleA_Layers, ModuleA_Params = ModuleA_Builder(
+        [[ModuleA_LastLayer], ['moduleA_input']], scope='ModuleA_%d' % idx)
+    ModuleA_reduction_Builder = build.Builder(InceptionV4_ModuleA_reduction)
+    ModuleA_reduction_LastLayer, ModuleA_reduction_Layers, ModuleA_reduction_Params = ModuleA_reduction_Builder(
+        [[ModuleA_LastLayer], ['moduleA_reduction_input']])
+
+    ModuleB_Builder = build.Builder(InceptionV4_ModuleB)
+    ModuleB_LastLayer = ModuleA_reduction_LastLayer
+    for idx in range(7): ModuleB_LastLayer, ModuleB_Layers, ModuleB_Params = ModuleB_Builder(
+        [[ModuleB_LastLayer], ['moduleB_input']], scope='ModuleB_%d' % idx)
+    ModuleB_reduction_Builder = build.Builder(InceptionV4_ModuleB_reduction)
+    ModuleB_reduction_LastLayer, ModuleB_reduction_Layers, ModuleB_reduction_Params = ModuleB_reduction_Builder(
+        [[ModuleB_LastLayer], ['moduleB_reduction_input']])
+
+    ModuleC_Builder = build.Builder(InceptionV4_ModuleC)
+    ModuleC_LastLayer = ModuleB_reduction_LastLayer
+    for idx in range(3): ModuleC_LastLayer, ModuleC_Layers, ModuleC_Params = ModuleC_Builder(
+        [[ModuleC_LastLayer], ['moduleC_input']], scope='ModuleC_%d' % idx)
+
+    CNN_LastLayer = ModuleB_LastLayer
 
 # Train Model
 RPN_Builder = build.Builder(rpn_train)
-RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, GroundTruth, ConfigKey, VGG16_LastLayer], ['image_info', 'ground_truth', 'config_key', 'conv5_3']])
+RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, GroundTruth, ConfigKey, CNN_LastLayer], ['image_info', 'ground_truth', 'config_key', 'conv5_3']])
 
 ROI_Builder = build.Builder(roi_train)
-Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[VGG16_LastLayer, RPN_Proposal_BBoxes, GroundTruth, ConfigKey], ['conv5_3', 'rpn_proposal_bboxes', 'ground_truth', 'config_key']])
+Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[CNN_LastLayer, RPN_Proposal_BBoxes, GroundTruth, ConfigKey], ['conv5_3', 'rpn_proposal_bboxes', 'ground_truth', 'config_key']])
 Pred_CLS_Prob = SearchLayer(ROI_Layers, 'cls_prob')
 
 # LOSS
@@ -71,54 +137,61 @@ lr = tf.train.exponential_decay(CONFIG.TRAIN.LEARNING_RATE, global_step, CONFIG.
 momentum = CONFIG.TRAIN.MOMENTUM
 train_op = tf.train.MomentumOptimizer(lr, momentum).minimize(final_loss, global_step=global_step)
 
-def get_class_idx(name):
-    class_names = ['aeroplane', 'bicycle', 'bird', 'boat',
-           'bottle', 'bus', 'car', 'cat', 'chair',
-           'cow', 'diningtable', 'dog', 'horse',
-           'motorbike', 'person', 'pottedplant',
-           'sheep', 'sofa', 'train', 'tvmonitor']
-    return class_names.index(name)+1
+def run_sess(img, img_info, gts):
+
+    start_time = time.time()
+    # rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v, rcnn_bbox_loss_v, global_step_v, _ = sess.run(
+    #     [rpn_cls_loss, rpn_bbox_loss, rcnn_cls_loss, rcnn_bbox_loss, global_step, train_op],
+    #     {
+    #         Image: [img],
+    #         ImageInfo: [img_info],
+    #         GroundTruth: gts,
+    #         ConfigKey: 'TRAIN',
+    #     }
+    # )
+    global_step_v, final_loss_v, _ = sess.run(
+        [global_step, final_loss, train_op],
+        {
+            Image: [img],
+            ImageInfo: [img_info],
+            GroundTruth: gts,
+            ConfigKey: 'TRAIN',
+        }
+    )
+    end_time = time.time()
+
+    print("-" * 50)
+    print("Step", global_step_v)
+    print("Total loss : %.4f" % (final_loss_v))
+    print("Time spent : %.4f" % (end_time - start_time))
+
+    if global_step_v % 10000 == 0:
+        saver.save(sess, './data/models/combine_test/combine_test.ckpt', global_step=global_step)
+
 
 if __name__ == '__main__':
 
     ConfigProto = tf.ConfigProto(allow_soft_placement=True)
     ConfigProto.gpu_options.allow_growth = True
+    # ConfigProto.gpu_options.per_process_gpu_memory_fraction = 1.0
     sess = tf.InteractiveSession(config=ConfigProto)
 
     tf.global_variables_initializer().run(session=sess)
     saver = tf.train.Saver()
+
     # saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
 
-    on_memory = False
+    on_memory = True
 
     if on_memory:
         org_image_set = next(voc_xml_parser('./data/data/sample_10/jpg/', './data/data/sample_10/xml/'))
         image_set = ImageSetExpand(org_image_set)
 
-        for rpt in range(100):
+        for rpt in range(10000):
             for idx, (img, img_info, gt_boxes, gt_classes) in enumerate(zip(image_set['images'], image_set['image_shape'], image_set['boxes'], image_set['classes'])):
                 gts = [np.concatenate([gt_boxes[i], [get_class_idx(gt_classes[i])]]) for i in range(len(gt_boxes))]
 
-                start_time = time.time()
-                rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v, rcnn_bbox_loss_v, global_step_v , _ = sess.run(
-                    [rpn_cls_loss, rpn_bbox_loss, rcnn_cls_loss, rcnn_bbox_loss, global_step, train_op],
-                    {
-                        Image: [img],
-                        ImageInfo: [img_info],
-                        GroundTruth: gts,
-                        ConfigKey: 'TRAIN',
-                    }
-                )
-                end_time = time.time()
-
-                print("-"*50)
-                print("Step", global_step_v)
-                print("Total loss :\t%.4f" %(rpn_cls_loss_v+rpn_bbox_loss_v+rcnn_cls_loss_v+rcnn_bbox_loss_v))
-                print("Losses :\t%.4f\t%.4f\t%.4f\t%.4f " %(rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v,rcnn_bbox_loss_v))
-                print("Time spent :%.4f" %(end_time - start_time))
-
-                if global_step_v%100000==0:
-                    saver.save(sess, './data/converge_test/models/converge_test.ckpt', global_step=global_step)
+                run_sess(img, img_info, gts)
 
     else:
         for rpt in range(100):
@@ -133,29 +206,6 @@ if __name__ == '__main__':
                 gts = [[np.concatenate((box, [cls])) for box, cls in zip(boxes, classes)] for
                                              boxes, classes in zip(boxes_set, classes_set)][0]
 
-                start_time = time.time()
-                rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v, rcnn_bbox_loss_v, global_step_v , _ = sess.run(
-                    [rpn_cls_loss, rpn_bbox_loss, rcnn_cls_loss, rcnn_bbox_loss, global_step, train_op],
-                    {
-                        Image: [img],
-                        ImageInfo: [img_info],
-                        GroundTruth: gts,
-                        ConfigKey: 'TRAIN',
-                    }
-                )
-                end_time = time.time()
-
-                print("-"*50)
-                print("Step", global_step_v)
-                print("Total loss :\t%.4f" %(rpn_cls_loss_v+rpn_bbox_loss_v+rcnn_cls_loss_v+rcnn_bbox_loss_v))
-                print("Losses :\t%.4f\t%.4f\t%.4f\t%.4f " %(rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v,rcnn_bbox_loss_v))
-                print("Time spent :%.4f" %(end_time - start_time))
-                # print('Figure %2d Recognition done. - %5.2f (s)' % (idx+1, end_time-start_time))
-
-                if global_step_v%100000==0:
-                    saver.save(sess, './data/converge_test/models/converge_test.ckpt', global_step=global_step)
-
-
-
+                run_sess(img, img_info, gts)
 
     pass
