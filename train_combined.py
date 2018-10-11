@@ -19,6 +19,27 @@ from architecture.roi import *
 from lib.database.voc_importer import *
 from lib.database.util import ImageSetExpand
 
+tf.flags.DEFINE_string("data_dir", "./data/data/full/", "Directory of data which includes \'jpg\' and \'xml\' folders.")
+tf.flags.DEFINE_string("model_dir", "./data/models/", "Target directory to save the model")
+tf.flags.DEFINE_string("finetune_dir", None, "Finetuned model to use. Default value lets the model start from first.")
+tf.flags.DEFINE_string("model_name", "model", "Name of the model")
+tf.flags.DEFINE_integer("end_step", None, "Total step to run. Default value lets the model run forever.")
+tf.flags.DEFINE_integer("save_step", 100000, "Steps to save the model")
+tf.flags.DEFINE_string("gpu_id", "0", "ID of gpu to use, which can be multiple.")
+
+FLAGS = tf.flags.FLAGS
+FLAGS._parse_flags()
+
+data_dir = FLAGS.data_dir
+model_dir = FLAGS.model_dir
+model_name = FLAGS.model_name
+end_step = FLAGS.end_step
+save_step = FLAGS.save_step
+finetune_dir = FLAGS.finetune_dir
+gpu_id= FLAGS.gpu_id
+
+os.environ["CUDA_VISIBLE_DEVICES"]=gpu_id
+
 Image = tf.placeholder(tf.float32, [None, None, None, 3], name='image')
 ImageInfo = tf.placeholder(tf.float32, [None, 3], name='image_info')
 GroundTruth = tf.placeholder(tf.float32, [None, 5], name='ground_truth')
@@ -70,16 +91,14 @@ for idx in range(3): ModuleC_LastLayer, ModuleC_Layers, ModuleC_Params = ModuleC
 
 
 #Combine
-LastLayers_shape = tf.shape(Mobilenet_LastLayer_1)[1:3]
-#TODO: get minimum shape and use it as target shape (even w/ 3+ models)
-VGG16_LastLayer_1 = tf.image.resize_images(VGG16_LastLayer_1, LastLayers_shape)
 LastLayers = [InceptionV2_LastLayer, Mobilenet_LastLayer_1, VGG16_LastLayer_1]
+target_weight = tf.reduce_min([tf.shape(layer_i)[1] for layer_i in LastLayers])
+target_height = tf.reduce_min([tf.shape(layer_i)[2] for layer_i in LastLayers])
+LastLayers = [tf.image.resize_images(layer_i, (target_weight,target_height)) for layer_i in LastLayers]
 
 Combined_Builder = build.Builder(Combined)
-Combined_LastLayer, Combined_Layers, Combined_Params = Combined_Builder([LastLayers, ['Input_1', 'Input_2', 'Input_3']])
+Combined_LastLayer, Combined_Layers, Combined_Params = Combined_Builder([LastLayers, ['Input_'+str(idx) for idx in range(len(LastLayers))]])
 
-
-# with tf.device('/gpu:0'):
 RPN_Builder = build.Builder(rpn_train)
 RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, GroundTruth, ConfigKey, Combined_LastLayer], ['image_info', 'ground_truth', 'config_key', 'conv5_3']])
 
@@ -136,7 +155,7 @@ def get_class_idx(name):
            'sheep', 'sofa', 'train', 'tvmonitor']
     return class_names.index(name)+1
 
-def run_sess(img, img_info, gts):
+def run_sess(img, img_info, gts, model_dir, model_name, save_step, end_step=None):
 
     start_time = time.time()
     # rpn_cls_loss_v, rpn_bbox_loss_v, rcnn_cls_loss_v, rcnn_bbox_loss_v, global_step_v, _ = sess.run(
@@ -148,8 +167,9 @@ def run_sess(img, img_info, gts):
     #         ConfigKey: 'TRAIN',
     #     }
     # )
-    final_loss_v, global_step_v, _ = sess.run(
-        [final_loss, global_step, train_op],
+
+    global_step_v, final_loss_v, _ = sess.run(
+        [global_step, final_loss, train_op],
         {
             Image: [img],
             ImageInfo: [img_info],
@@ -157,6 +177,7 @@ def run_sess(img, img_info, gts):
             ConfigKey: 'TRAIN',
         }
     )
+
     end_time = time.time()
 
     print("-" * 50)
@@ -164,8 +185,17 @@ def run_sess(img, img_info, gts):
     print("Total loss : %.4f" % (final_loss_v))
     print("Time spent : %.4f" % (end_time - start_time))
 
-    if global_step_v % 10000 == 0:
-        saver.save(sess, './data/models/combine_test/combine_test.ckpt', global_step=global_step)
+    if global_step_v % save_step == 0:
+        if not os.path.isdir(model_dir):
+            os.makedirs(model_dir)
+        saver.save(sess, model_dir+model_name+".ckpt", global_step=global_step)
+
+    if global_step_v == end_step:
+        print("-" * 50)
+        print("-" * 50)
+        print("Total time cost : %.0f" % (time.time() - tot_time))
+
+        sys.exit()
 
 
 if __name__ == '__main__':
@@ -175,27 +205,30 @@ if __name__ == '__main__':
     # ConfigProto.gpu_options.per_process_gpu_memory_fraction = 1.0
     sess = tf.InteractiveSession(config=ConfigProto)
 
-    tf.global_variables_initializer().run(session=sess)
+    if not finetune_dir:
+        tf.global_variables_initializer().run(session=sess)
+
     saver = tf.train.Saver()
+    if finetune_dir:
+        saver.restore(sess, finetune_dir)
 
-    # saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
-
-    on_memory = True
+    on_memory = False
+    tot_time = time.time()
 
     if on_memory:
-        org_image_set = next(voc_xml_parser('./data/data/sample_10/jpg/', './data/data/sample_10/xml/'))
+        org_image_set = next(voc_xml_parser(data_dir+'jpg/', data_dir+'xml/', on_memory=on_memory))
         image_set = ImageSetExpand(org_image_set)
 
         for rpt in range(10000):
             for idx, (img, img_info, gt_boxes, gt_classes) in enumerate(zip(image_set['images'], image_set['image_shape'], image_set['boxes'], image_set['classes'])):
                 gts = [np.concatenate([gt_boxes[i], [get_class_idx(gt_classes[i])]]) for i in range(len(gt_boxes))]
 
-                run_sess(img, img_info, gts)
+                run_sess(img, img_info, gts, model_dir=model_dir, model_name=model_name, save_step=save_step, end_step=end_step)
 
     else:
-        for rpt in range(100):
+        for rpt in range(10000):
             for idx, org_image_set in enumerate(
-                    voc_xml_parser('./data/data/full/jpg/', './data/data/full/xml/', on_memory=on_memory)):
+                    voc_xml_parser(data_dir+'jpg/', data_dir+'xml/', on_memory=on_memory)):
 
                 image_set = ImageSetExpand(org_image_set)
                 boxes_set, classes_set = image_set['boxes'], np.array(
@@ -205,11 +238,6 @@ if __name__ == '__main__':
                 gts = [[np.concatenate((box, [cls])) for box, cls in zip(boxes, classes)] for
                                              boxes, classes in zip(boxes_set, classes_set)][0]
 
-                run_sess(img, img_info, gts)
-
-
-
-
-
+                run_sess(img, img_info, gts, model_dir=model_dir, model_name=model_name, save_step=save_step, end_step=end_step)
 
     pass
