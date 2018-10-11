@@ -44,7 +44,7 @@ ImageInfo = tf.placeholder(tf.float32, [None, 3], name='image_info')
 GroundTruth = tf.placeholder(tf.float32, [None, 5], name='ground_truth')
 ConfigKey = tf.placeholder(tf.string, name='config_key')
 
-CNN_model = 'VGG16'
+CNN_model = 'InceptionV4'
 
 if CNN_model == 'VGG16':
     VGG16_Builder = build.Builder(vgg16)
@@ -60,31 +60,11 @@ elif CNN_model == 'InceptionV2':
     CNN_LastLayer = InceptionV2_LastLayer
 
 elif CNN_model == 'InceptionV4':
-    Stem_Builder = build.Builder(InceptionV4_Stem)
-    Stem_LastLayer, Stem_Layers, Stem_Params = Stem_Builder(Image)
 
-    ModuleA_Builder = build.Builder(InceptionV4_ModuleA)
-    ModuleA_LastLayer = Stem_LastLayer
-    for idx in range(4): ModuleA_LastLayer, ModuleA_Layers, ModuleA_Params = ModuleA_Builder(
-        [[ModuleA_LastLayer], ['moduleA_input']], scope='ModuleA_%d' % idx)
-    ModuleA_reduction_Builder = build.Builder(InceptionV4_ModuleA_reduction)
-    ModuleA_reduction_LastLayer, ModuleA_reduction_Layers, ModuleA_reduction_Params = ModuleA_reduction_Builder(
-        [[ModuleA_LastLayer], ['moduleA_reduction_input']])
+    InceptionV4_Builder = build.Builder(InceptionV4)
+    InceptionV4_LastLayer, InceptionV4_Layers, InceptionV4_Params = InceptionV4_Builder(Image)
 
-    ModuleB_Builder = build.Builder(InceptionV4_ModuleB)
-    ModuleB_LastLayer = ModuleA_reduction_LastLayer
-    for idx in range(7): ModuleB_LastLayer, ModuleB_Layers, ModuleB_Params = ModuleB_Builder(
-        [[ModuleB_LastLayer], ['moduleB_input']], scope='ModuleB_%d' % idx)
-    ModuleB_reduction_Builder = build.Builder(InceptionV4_ModuleB_reduction)
-    ModuleB_reduction_LastLayer, ModuleB_reduction_Layers, ModuleB_reduction_Params = ModuleB_reduction_Builder(
-        [[ModuleB_LastLayer], ['moduleB_reduction_input']])
-
-    ModuleC_Builder = build.Builder(InceptionV4_ModuleC)
-    ModuleC_LastLayer = ModuleB_reduction_LastLayer
-    for idx in range(3): ModuleC_LastLayer, ModuleC_Layers, ModuleC_Params = ModuleC_Builder(
-        [[ModuleC_LastLayer], ['moduleC_input']], scope='ModuleC_%d' % idx)
-
-    CNN_LastLayer = ModuleC_LastLayer
+    CNN_LastLayer = InceptionV4_LastLayer
 
 # Train Model
 RPN_Builder = build.Builder(rpn_train)

@@ -35,3 +35,12 @@ def dropout(
     safe_append(layer_collector, l, name)
 
     return l
+
+def identify(
+        input,
+        name='Identify',
+        layer_collector=None
+    ):
+    l = input
+    safe_append(layer_collector, l, name)
+    return l
