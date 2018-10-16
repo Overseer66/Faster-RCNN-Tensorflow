@@ -93,7 +93,6 @@ if __name__ == '__main__':
     # tf.global_variables_initializer().run(session=sess)
     saver = tf.train.Saver()
     # saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
-    saver.restore(sess, './data/mo')
 
     on_memory = False
     if on_memory:
