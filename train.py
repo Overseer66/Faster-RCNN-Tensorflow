@@ -9,10 +9,11 @@ from config import config as CONFIG
 from DeepBuilder.util import SearchLayer
 from lib.util import ModifiedSmoothL1
 
-from architecture.mobilenet import *
 from architecture.vgg import *
 from architecture.inception_v2 import *
 from architecture.inception_v4 import *
+from architecture.mobilenet import *
+from architecture.resnet import *
 from architecture.rpn import *
 from architecture.roi import *
 
@@ -45,30 +46,47 @@ ImageInfo = tf.placeholder(tf.float32, [None, 3], name='image_info')
 GroundTruth = tf.placeholder(tf.float32, [None, 5], name='ground_truth')
 ConfigKey = tf.placeholder(tf.string, name='config_key')
 
-# CNN_model = 'InceptionV4'
+CNN_model = 'InceptionV4'
 
-# if CNN_model == 'VGG16':
-#     VGG16_Builder = build.Builder(vgg16)
-#     VGG16_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image)
+if CNN_model == 'VGG16':
+    VGG16_Builder = build.Builder(vgg16)
+    VGG16_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image)
+    CNN_LastLayer = VGG16_LastLayer
 
-#     CNN_LastLayer = VGG16_LastLayer
+elif CNN_model == 'InceptionV2':
+    InceptionV2_Builder = build.Builder(InceptionV2)
+    InceptionV2_LastLayer, InceptionV2_Layers, InceptionV2_Params = InceptionV2_Builder(Image)
+    CNN_LastLayer = InceptionV2_LastLayer
 
-# elif CNN_model == 'InceptionV2':
+elif CNN_model == 'InceptionV4':
+    InceptionV4_Builder = build.Builder(InceptionV4)
+    InceptionV4_LastLayer, InceptionV4_Layers, InceptionV4_Params = InceptionV4_Builder(Image)
+    CNN_LastLayer = InceptionV4_LastLayer
 
-#     InceptionV2_Builder = build.Builder(InceptionV2)
-#     InceptionV2_LastLayer, InceptionV2_Layers, InceptionV2_Params = InceptionV2_Builder(Image)
+elif CNN_model == 'Mobilenet':
+    Mobilenet_Builder = build.Builder(mobilenet)
+    Mobilenet_LastLayer, Mobilenet_Layers, Mobilenet_Params = Mobilenet_Builder(Image)
+    CNN_LastLayer = Mobilenet_LastLayer
 
-#     CNN_LastLayer = InceptionV2_LastLayer
+elif CNN_model == 'Resnet34':
+    Resnet34_Builder = build.Builder(resnet34)
+    Resnet34_LastLayer, Resnet34_Layers, Resnet34_Params = Resnet34_Builder(Image)
+    CNN_LastLayer = Resnet34_LastLayer
 
-# elif CNN_model == 'InceptionV4':
+elif CNN_model == 'Resnet50':
+    Resnet50_Builder = build.Builder(resnet50)
+    Resnet50_LastLayer, Resnet50_Layers, Resnet50_Params = Resnet50_Builder(Image)
+    CNN_LastLayer = Resnet50_LastLayer
 
-#     InceptionV4_Builder = build.Builder(InceptionV4)
-#     InceptionV4_LastLayer, InceptionV4_Layers, InceptionV4_Params = InceptionV4_Builder(Image)
+elif CNN_model == 'Resnet101':
+    Resnet101_Builder = build.Builder(resnet101)
+    Resnet101_LastLayer, Resnet101_Layers, Resnet101_Params = Resnet101_Builder(Image)
+    CNN_LastLayer = Resnet101_LastLayer
 
-#     CNN_LastLayer = InceptionV4_LastLayer
-
-Mobilenet_Builder = build.Builder(mobilenet)
-CNN_LastLayer, Mobilenet_Layers, Mobilenet_Params = Mobilenet_Builder(Image)
+elif CNN_model == 'Resnet152':
+    Resnet152_Builder = build.Builder(resnet152)
+    Resnet152_LastLayer, Resnet152_Layers, Resnet152_Params = Resnet152_Builder(Image)
+    CNN_LastLayer = Resnet152_LastLayer
 
 # Train Model
 RPN_Builder = build.Builder(rpn_train)
@@ -171,6 +189,7 @@ def run_sess(img, img_info, gts, model_dir, model_name, save_step, end_step=None
 
 
 if __name__ == '__main__':
+
     ConfigProto = tf.ConfigProto(allow_soft_placement=True)
     ConfigProto.gpu_options.allow_growth = True
     # ConfigProto.gpu_options.per_process_gpu_memory_fraction = 1.0
