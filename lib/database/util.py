@@ -8,6 +8,8 @@ from config import config as CONFIG
 def ImageSetExpand(image_set):
     image_set = copy.deepcopy(image_set)
     set_size = len(image_set['images'])
+
+    image_set['org_boxes'] = []
     for idx in range(set_size):
         
 
@@ -23,8 +25,9 @@ def ImageSetExpand(image_set):
         image_set['images'][idx] = ImageExpand(image, scale)
         image_set['image_shape'][idx] *= scale
         image_set['image_shape'][idx] = np.append(image_set['image_shape'][idx], scale)
-        
         image_set['boxes'][idx] = [box * scale for box in boxes]
+        image_set['org_boxes'].append(boxes)
+
 
     
     return image_set

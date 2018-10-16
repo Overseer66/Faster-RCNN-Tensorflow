@@ -12,6 +12,8 @@ from lib.util import ModifiedSmoothL1
 from architecture.vgg import *
 from architecture.inception_v2 import *
 from architecture.inception_v4 import *
+from architecture.mobilenet import *
+from architecture.resnet import *
 from architecture.rpn import *
 from architecture.roi import *
 
@@ -49,29 +51,49 @@ CNN_model = 'InceptionV4'
 if CNN_model == 'VGG16':
     VGG16_Builder = build.Builder(vgg16)
     VGG16_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image)
-
     CNN_LastLayer = VGG16_LastLayer
 
 elif CNN_model == 'InceptionV2':
-
     InceptionV2_Builder = build.Builder(InceptionV2)
     InceptionV2_LastLayer, InceptionV2_Layers, InceptionV2_Params = InceptionV2_Builder(Image)
-
     CNN_LastLayer = InceptionV2_LastLayer
 
 elif CNN_model == 'InceptionV4':
-
     InceptionV4_Builder = build.Builder(InceptionV4)
     InceptionV4_LastLayer, InceptionV4_Layers, InceptionV4_Params = InceptionV4_Builder(Image)
-
     CNN_LastLayer = InceptionV4_LastLayer
+
+elif CNN_model == 'Mobilenet':
+    Mobilenet_Builder = build.Builder(mobilenet)
+    Mobilenet_LastLayer, Mobilenet_Layers, Mobilenet_Params = Mobilenet_Builder(Image)
+    CNN_LastLayer = Mobilenet_LastLayer
+
+elif CNN_model == 'Resnet34':
+    Resnet34_Builder = build.Builder(resnet34)
+    Resnet34_LastLayer, Resnet34_Layers, Resnet34_Params = Resnet34_Builder(Image)
+    CNN_LastLayer = Resnet34_LastLayer
+
+elif CNN_model == 'Resnet50':
+    Resnet50_Builder = build.Builder(resnet50)
+    Resnet50_LastLayer, Resnet50_Layers, Resnet50_Params = Resnet50_Builder(Image)
+    CNN_LastLayer = Resnet50_LastLayer
+
+elif CNN_model == 'Resnet101':
+    Resnet101_Builder = build.Builder(resnet101)
+    Resnet101_LastLayer, Resnet101_Layers, Resnet101_Params = Resnet101_Builder(Image)
+    CNN_LastLayer = Resnet101_LastLayer
+
+elif CNN_model == 'Resnet152':
+    Resnet152_Builder = build.Builder(resnet152)
+    Resnet152_LastLayer, Resnet152_Layers, Resnet152_Params = Resnet152_Builder(Image)
+    CNN_LastLayer = Resnet152_LastLayer
 
 # Train Model
 RPN_Builder = build.Builder(rpn_train)
-RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, GroundTruth, ConfigKey, CNN_LastLayer], ['image_info', 'ground_truth', 'config_key', 'conv5_3']])
+RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, GroundTruth, ConfigKey, CNN_LastLayer], ['image_info', 'ground_truth', 'config_key', 'last_conv']])
 
 ROI_Builder = build.Builder(roi_train)
-Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[CNN_LastLayer, RPN_Proposal_BBoxes, GroundTruth, ConfigKey], ['conv5_3', 'rpn_proposal_bboxes', 'ground_truth', 'config_key']])
+Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[CNN_LastLayer, RPN_Proposal_BBoxes, GroundTruth, ConfigKey], ['last_conv', 'rpn_proposal_bboxes', 'ground_truth', 'config_key']])
 Pred_CLS_Prob = SearchLayer(ROI_Layers, 'cls_prob')
 
 # LOSS
