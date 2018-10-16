@@ -12,11 +12,11 @@ n_classes = CONFIG.N_CLASSES
 roi_test = (
     {'method': util.AppendInputs, },
 
-    {'method': util.LayerSelector, 'kwargs': {'names': ['conv5_3', 'rpn_proposal_bboxes']}},
+    {'method': util.LayerSelector, 'kwargs': {'names': ['last_conv', 'rpn_proposal_bboxes']}},
     {'method': roi_pooling, 'kwargs': {'pooled_width': 7, 'pooled_height': 7, 'spatial_scale': 1.0/16}, 'name': 'pool_5'},
     {'method': activation.Transpose, 'kwargs': {'permutation': [0, 3, 1, 2]}},
     {'method': layer.flatten},
-    {'method': layer.fully_connected_layer, 'kwargs': {'output_size': 4096, 'name': 'fc6'}},
+    {'method': layer.fully_connected_layer, 'kwargs': {'output_size': 1024, 'name': 'fc6'}},
     {'method': layer.fully_connected_layer, 'kwargs': {'output_size': 4096, 'name': 'fc7'}},
 
     {'method': layer.fully_connected_layer, 'kwargs': {'output_size': n_classes, 'activation': None, 'name': 'cls_score'}},
@@ -38,11 +38,11 @@ roi_train = (
     {'method': util.LayerIndexer, 'kwargs': {'indices': [0]}},
     {'method': layer.reshape, 'kwargs': {'shape': [-1, 5], 'name': 'roi_bboxes'}},
 
-    {'method': util.LayerSelector, 'kwargs': {'names': ['conv5_3', 'roi_bboxes']}},
+    {'method': util.LayerSelector, 'kwargs': {'names': ['last_conv', 'roi_bboxes']}},
     {'method': roi_pooling, 'kwargs': {'pooled_width': 7, 'pooled_height': 7, 'spatial_scale': 1.0/16}, 'name': 'pool_5'},
     {'method': activation.Transpose, 'kwargs': {'permutation': [0, 3, 1, 2]}},
     {'method': layer.flatten},
-    {'method': layer.fully_connected_layer, 'kwargs': {'output_size': 4096, 'name': 'fc6'}},
+    {'method': layer.fully_connected_layer, 'kwargs': {'output_size': 1024, 'name': 'fc6'}},
     {'method': activation.Dropout, 'kwargs': {'keep_prob': 0.5}},
     {'method': layer.fully_connected_layer, 'kwargs': {'output_size': 4096, 'name': 'fc7'}},
     {'method': activation.Dropout, 'kwargs': {'keep_prob': 0.5, 'name': 'pooled_layer'}},

@@ -12,6 +12,7 @@ from architecture.vgg import *
 from architecture.inception_v2 import *
 from architecture.inception_v4 import *
 from architecture.mobilenet import *
+from architecture.resnet import *
 from architecture.combined import *
 from architecture.rpn import *
 from architecture.roi import *
@@ -30,11 +31,13 @@ tf.flags.DEFINE_string("gpu_id", "0", "ID of gpu to use, which can be multiple."
 FLAGS = tf.flags.FLAGS
 FLAGS._parse_flags()
 
-data_dir = FLAGS.data_dir
+# data_dir = FLAGS.data_dir
+data_dir = "./data/data/sample_10/"
 model_dir = FLAGS.model_dir
 model_name = FLAGS.model_name
 end_step = FLAGS.end_step
-save_step = FLAGS.save_step
+# save_step = FLAGS.save_step
+save_step = None
 finetune_dir = FLAGS.finetune_dir
 gpu_id= FLAGS.gpu_id
 
@@ -45,65 +48,56 @@ ImageInfo = tf.placeholder(tf.float32, [None, 3], name='image_info')
 GroundTruth = tf.placeholder(tf.float32, [None, 5], name='ground_truth')
 ConfigKey = tf.placeholder(tf.string, name='config_key')
 
-# Models : VGG16, RPN, ROI
-
-#VGG16
+# Models
 VGG16_Builder = build.Builder(vgg16)
-VGG16_LastLayer_1, VGG16_Layers_1, VGG16_Params_1 = VGG16_Builder(Image, scope="VGG_1")
-VGG16_LastLayer_2, VGG16_Layers_2, VGG16_Params_2 = VGG16_Builder(Image, scope="VGG_2")
-VGG16_LastLayer_3, VGG16_Layers_3, VGG16_Params_3 = VGG16_Builder(Image, scope="VGG_3")
+VGG16_LastLayer_1, VGG16_Layers_1, VGG16_Params_1 = VGG16_Builder(Image, scope="VGG16_1")
+VGG16_LastLayer_2, VGG16_Layers_2, VGG16_Params_2 = VGG16_Builder(Image, scope="VGG16_2")
+# VGG16_LastLayer_3, VGG16_Layers_3, VGG16_Params_3 = VGG16_Builder(Image, scope="VGG16_3")
 
 
 Mobilenet_Builder = build.Builder(mobilenet)
 Mobilenet_LastLayer_1, Mobilenet_Layers_1, Mobilenet_Params_1 = Mobilenet_Builder(Image, scope="Mobilenet_1")
-Mobilenet_LastLayer_2, Mobilenet_Layers_2, Mobilenet_Params_2 = Mobilenet_Builder(Image, scope="Mobilenet_2")
-Mobilenet_LastLayer_3, Mobilenet_Layers_3, Mobilenet_Params_3 = Mobilenet_Builder(Image, scope="Mobilenet_3")
-Mobilenet_LastLayer_4, Mobilenet_Layers_4, Mobilenet_Params_4 = Mobilenet_Builder(Image, scope="Mobilenet_4")
-Mobilenet_LastLayer_5, Mobilenet_Layers_5, Mobilenet_Params_5 = Mobilenet_Builder(Image, scope="Mobilenet_5")
-Mobilenet_LastLayer_6, Mobilenet_Layers_6, Mobilenet_Params_6 = Mobilenet_Builder(Image, scope="Mobilenet_6")
+# Mobilenet_LastLayer_2, Mobilenet_Layers_2, Mobilenet_Params_2 = Mobilenet_Builder(Image, scope="Mobilenet_2")
+# Mobilenet_LastLayer_3, Mobilenet_Layers_3, Mobilenet_Params_3 = Mobilenet_Builder(Image, scope="Mobilenet_3")
+# Mobilenet_LastLayer_4, Mobilenet_Layers_4, Mobilenet_Params_4 = Mobilenet_Builder(Image, scope="Mobilenet_4")
+# Mobilenet_LastLayer_5, Mobilenet_Layers_5, Mobilenet_Params_5 = Mobilenet_Builder(Image, scope="Mobilenet_5")
+# Mobilenet_LastLayer_6, Mobilenet_Layers_6, Mobilenet_Params_6 = Mobilenet_Builder(Image, scope="Mobilenet_6")
+
+Resnet34_Builder = build.Builder(resnet34)
+Resnet34_LastLayer_1, Resnet34_Layers_1, Resnet34_Params_1 = Resnet34_Builder(Image, scope="Resnet34_1")
+
+Resnet50_Builder = build.Builder(resnet50)
+Resnet50_LastLayer_1, Resnet50_Layers_1, Resnet50_Params_1 = Resnet50_Builder(Image, scope="Resnet50_1")
+
+Resnet101_Builder = build.Builder(resnet101)
+Resnet101_LastLayer_1, Resnet101_Layers_1, Resnet101_Params_1 = Resnet101_Builder(Image, scope="Resnet101_1")
+
+Resnet152_Builder = build.Builder(resnet152)
+Resnet152_LastLayer_1, Resnet152_Layers_1, Resnet152_Params_1 = Resnet152_Builder(Image, scope="Resnet152_1")
 
 InceptionV2_Builder = build.Builder(InceptionV2)
 InceptionV2_LastLayer, InceptionV2_Layers, InceptionV2_Params = InceptionV2_Builder(Image, scope="InceptionV2")
 
-Stem_Builder = build.Builder(InceptionV4_Stem)
-Stem_LastLayer, Stem_Layers, Stem_Params = Stem_Builder(Image)
-
-ModuleA_Builder = build.Builder(InceptionV4_ModuleA)
-ModuleA_LastLayer = Stem_LastLayer
-for idx in range(4): ModuleA_LastLayer, ModuleA_Layers, ModuleA_Params = ModuleA_Builder(
-    [[ModuleA_LastLayer], ['moduleA_input']], scope='ModuleA_%d' % idx)
-ModuleA_reduction_Builder = build.Builder(InceptionV4_ModuleA_reduction)
-ModuleA_reduction_LastLayer, ModuleA_reduction_Layers, ModuleA_reduction_Params = ModuleA_reduction_Builder(
-    [[ModuleA_LastLayer], ['moduleA_reduction_input']])
-
-ModuleB_Builder = build.Builder(InceptionV4_ModuleB)
-ModuleB_LastLayer = ModuleA_reduction_LastLayer
-for idx in range(7): ModuleB_LastLayer, ModuleB_Layers, ModuleB_Params = ModuleB_Builder(
-    [[ModuleB_LastLayer], ['moduleB_input']], scope='ModuleB_%d' % idx)
-ModuleB_reduction_Builder = build.Builder(InceptionV4_ModuleB_reduction)
-ModuleB_reduction_LastLayer, ModuleB_reduction_Layers, ModuleB_reduction_Params = ModuleB_reduction_Builder(
-    [[ModuleB_LastLayer], ['moduleB_reduction_input']])
-
-ModuleC_Builder = build.Builder(InceptionV4_ModuleC)
-ModuleC_LastLayer = ModuleB_reduction_LastLayer
-for idx in range(3): ModuleC_LastLayer, ModuleC_Layers, ModuleC_Params = ModuleC_Builder(
-    [[ModuleC_LastLayer], ['moduleC_input']], scope='ModuleC_%d' % idx)
+InceptionV4_Builder = build.Builder(InceptionV4)
+InceptionV4_LastLayer, InceptionV4_Layers, InceptionV4_Params = InceptionV4_Builder(Image, scope="InceptionV4")
 
 
 #Combine
-LastLayers = [InceptionV2_LastLayer, Mobilenet_LastLayer_1, VGG16_LastLayer_1]
+LastLayers = [InceptionV2_LastLayer, VGG16_LastLayer_1]
 target_weight = tf.reduce_min([tf.shape(layer_i)[1] for layer_i in LastLayers])
 target_height = tf.reduce_min([tf.shape(layer_i)[2] for layer_i in LastLayers])
-LastLayers = [tf.image.resize_images(layer_i, (target_weight,target_height)) for layer_i in LastLayers]
+target_size = (target_weight, target_height)
+LastLayers = [tf.image.resize_images(layer_i, target_size) for layer_i in LastLayers]
 
 Combined_Builder = build.Builder(Combined)
 Combined_LastLayer, Combined_Layers, Combined_Params = Combined_Builder([LastLayers, ['Input_'+str(idx) for idx in range(len(LastLayers))]])
 
+#FRCN
 RPN_Builder = build.Builder(rpn_train)
-RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, GroundTruth, ConfigKey, Combined_LastLayer], ['image_info', 'ground_truth', 'config_key', 'conv5_3']])
+RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, GroundTruth, ConfigKey, Combined_LastLayer], ['image_info', 'ground_truth', 'config_key', 'last_conv']])
 
 ROI_Builder = build.Builder(roi_train)
-Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[Combined_LastLayer, RPN_Proposal_BBoxes, GroundTruth, ConfigKey], ['conv5_3', 'rpn_proposal_bboxes', 'ground_truth', 'config_key']])
+Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[Combined_LastLayer, RPN_Proposal_BBoxes, GroundTruth, ConfigKey], ['last_conv', 'rpn_proposal_bboxes', 'ground_truth', 'config_key']])
 Pred_CLS_Prob = SearchLayer(ROI_Layers, 'cls_prob')
 
 # LOSS
@@ -185,10 +179,11 @@ def run_sess(img, img_info, gts, model_dir, model_name, save_step, end_step=None
     print("Total loss : %.4f" % (final_loss_v))
     print("Time spent : %.4f" % (end_time - start_time))
 
-    if global_step_v % save_step == 0:
-        if not os.path.isdir(model_dir):
-            os.makedirs(model_dir)
-        saver.save(sess, model_dir+model_name+".ckpt", global_step=global_step)
+    if not save_step==None:
+        if global_step_v % save_step == 0:
+            if not os.path.isdir(model_dir):
+                os.makedirs(model_dir)
+            saver.save(sess, model_dir+model_name+".ckpt", global_step=global_step)
 
     if global_step_v == end_step:
         print("-" * 50)
@@ -212,7 +207,7 @@ if __name__ == '__main__':
     if finetune_dir:
         saver.restore(sess, finetune_dir)
 
-    on_memory = False
+    on_memory = True
     tot_time = time.time()
 
     if on_memory:

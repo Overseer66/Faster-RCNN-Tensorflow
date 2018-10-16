@@ -5,17 +5,31 @@ import time
 from config import config as CONFIG
 
 from DeepBuilder.util import SearchLayer
-
 from architecture.vgg import *
-from architecture.vgg_temp import *
+from architecture.inception_v2 import *
 from architecture.inception_v4 import *
+from architecture.mobilenet import *
+from architecture.resnet import *
 from architecture.combined import *
 from architecture.rpn import *
 from architecture.roi import *
 
 from lib.database.voc_importer import *
 from lib.database.util import ImageSetExpand
-from lib.FRCNN.bbox_transform import BBoxTransformInverse
+
+tf.flags.DEFINE_string("data_dir", "./data/data/full/", "Directory of data which includes \'jpg\' and \'xml\' folders.")
+tf.flags.DEFINE_string("finetune_dir", None, "Finetuned model to use. Default value lets the model start from first.")
+tf.flags.DEFINE_string("gpu_id", "0", "ID of gpu to use, which can be multiple.")
+
+FLAGS = tf.flags.FLAGS
+FLAGS._parse_flags()
+
+# data_dir = FLAGS.data_dir
+data_dir = "./data/data/sample_10/"
+finetune_dir = FLAGS.finetune_dir
+gpu_id= FLAGS.gpu_id
+
+os.environ["CUDA_VISIBLE_DEVICES"]=gpu_id
 
 # Placeholder
 Image = tf.placeholder(tf.float32, [None, None, None, 3], name='image')
@@ -27,50 +41,53 @@ ConfigKey = tf.placeholder(tf.string, name='config_key')
 # Models : VGG16, RPN, ROI
 
 #VGG16
-VGG16_Builder_1 = build.Builder(vgg16_1)
-VGG16_LastLayer_1, VGG16_Layers_1, VGG16_Params_1 = VGG16_Builder_1(Image)
+VGG16_Builder_1 = build.Builder(vgg16)
+VGG16_LastLayer_1, VGG16_Layers_1, VGG16_Params_1 = VGG16_Builder_1(Image, scope="VGG16_1")
 
-VGG16_Builder_2 = build.Builder(vgg16_2)
-VGG16_LastLayer_2, VGG16_Layers_2, VGG16_Params_2 = VGG16_Builder_2(Image)
+Mobilenet_Builder = build.Builder(mobilenet)
+Mobilenet_LastLayer_1, Mobilenet_Layers_1, Mobilenet_Params_1 = Mobilenet_Builder(Image, scope="Mobilenet_1")
+# Mobilenet_LastLayer_2, Mobilenet_Layers_2, Mobilenet_Params_2 = Mobilenet_Builder(Image, scope="Mobilenet_2")
+# Mobilenet_LastLayer_3, Mobilenet_Layers_3, Mobilenet_Params_3 = Mobilenet_Builder(Image, scope="Mobilenet_3")
+# Mobilenet_LastLayer_4, Mobilenet_Layers_4, Mobilenet_Params_4 = Mobilenet_Builder(Image, scope="Mobilenet_4")
+# Mobilenet_LastLayer_5, Mobilenet_Layers_5, Mobilenet_Params_5 = Mobilenet_Builder(Image, scope="Mobilenet_5")
+# Mobilenet_LastLayer_6, Mobilenet_Layers_6, Mobilenet_Params_6 = Mobilenet_Builder(Image, scope="Mobilenet_6")
 
+Resnet34_Builder = build.Builder(resnet34)
+Resnet34_LastLayer_1, Resnet34_Layers_1, Resnet34_Params_1 = Resnet34_Builder(Image, scope="Resnet34_1")
 
-#InceptionV4
-Stem_Builder = build.Builder(InceptionV4_Stem)
-Stem_LastLayer, Stem_Layers, Stem_Params = Stem_Builder(Image)
+Resnet50_Builder = build.Builder(resnet50)
+Resnet50_LastLayer_1, Resnet50_Layers_1, Resnet50_Params_1 = Resnet50_Builder(Image, scope="Resnet50_1")
 
-ModuleA_Builder = build.Builder(InceptionV4_ModuleA)
-ModuleA_LastLayer = Stem_LastLayer
-for idx in range(4): ModuleA_LastLayer, ModuleA_Layers, ModuleA_Params = ModuleA_Builder([[ModuleA_LastLayer],['moduleA_input']], scope='ModuleA_%d'%idx)
-ModuleA_reduction_Builder = build.Builder(InceptionV4_ModuleA_reduction)
-ModuleA_reduction_LastLayer, ModuleA_reduction_Layers, ModuleA_reduction_Params = ModuleA_reduction_Builder([[ModuleA_LastLayer],['moduleA_reduction_input']])
+Resnet101_Builder = build.Builder(resnet101)
+Resnet101_LastLayer_1, Resnet101_Layers_1, Resnet101_Params_1 = Resnet101_Builder(Image, scope="Resnet101_1")
 
-ModuleB_Builder = build.Builder(InceptionV4_ModuleB)
-ModuleB_LastLayer = ModuleA_reduction_LastLayer
-for idx in range(7): ModuleB_LastLayer, ModuleB_Layers, ModuleB_Params = ModuleB_Builder([[ModuleB_LastLayer],['moduleB_input']], scope='ModuleB_%d'%idx)
-ModuleB_reduction_Builder = build.Builder(InceptionV4_ModuleB_reduction)
-ModuleB_reduction_LastLayer, ModuleB_reduction_Layers, ModuleB_reduction_Params = ModuleB_reduction_Builder([[ModuleB_LastLayer],['moduleB_reduction_input']])
+Resnet152_Builder = build.Builder(resnet152)
+Resnet152_LastLayer_1, Resnet152_Layers_1, Resnet152_Params_1 = Resnet152_Builder(Image, scope="Resnet152_1")
 
-ModuleC_Builder = build.Builder(InceptionV4_ModuleC)
-ModuleC_LastLayer = ModuleB_reduction_LastLayer
-for idx in range(3): ModuleC_LastLayer, ModuleC_Layers, ModuleC_Params = ModuleC_Builder([[ModuleC_LastLayer],['moduleC_input']], scope='ModuleC_%d'%idx)
+InceptionV2_Builder = build.Builder(InceptionV2)
+InceptionV2_LastLayer, InceptionV2_Layers, InceptionV2_Params = InceptionV2_Builder(Image, scope="InceptionV2")
+
+InceptionV4_Builder = build.Builder(InceptionV4)
+InceptionV4_LastLayer, InceptionV4_Layers, InceptionV4_Params = InceptionV4_Builder(Image, scope="InceptionV4")
+
 
 #Combine
-LastLayers = [VGG16_LastLayer_1, VGG16_LastLayer_2]
-# LastLayers_shape = [tf.shape(row)[1:3] for row in LastLayers]
-#TODO: get minimum shape and use it as target shape (even w/ 3+ models)
-# VGG16_LastLayer = tf.image.resize_images(VGG16_LastLayer, LastLayers_shape[1])
+LastLayers = [InceptionV2_LastLayer, VGG16_LastLayer_1]
+target_weight = tf.reduce_min([tf.shape(layer_i)[1] for layer_i in LastLayers])
+target_height = tf.reduce_min([tf.shape(layer_i)[2] for layer_i in LastLayers])
+target_size = (target_weight, target_height)
+LastLayers = [tf.image.resize_images(layer_i, target_size) for layer_i in LastLayers]
 
 Combined_Builder = build.Builder(Combined)
-Combined_LastLayer, Combined_Layers, Combined_Params = Combined_Builder([LastLayers, ['VGG16_input', 'InceptionV4_input']])
-
+Combined_LastLayer, Combined_Layers, Combined_Params = Combined_Builder([LastLayers, ['Input_'+str(idx) for idx in range(len(LastLayers))]])
 
 RPN_Builder = build.Builder(rpn_test)
 RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder(
-    [[ImageInfo, ConfigKey, Combined_LastLayer], ['image_info', 'config_key', 'conv5_3']])
+    [[ImageInfo, ConfigKey, Combined_LastLayer], ['image_info', 'config_key', 'last_conv']])
 
 ROI_Builder = build.Builder(roi_test)
 Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder(
-    [[ImageInfo, Combined_LastLayer, RPN_Proposal_BBoxes], ['image_info', 'conv5_3', 'rpn_proposal_bboxes']])
+    [[ImageInfo, Combined_LastLayer, RPN_Proposal_BBoxes], ['image_info', 'last_conv', 'rpn_proposal_bboxes']])
 Pred_CLS_Prob = SearchLayer(ROI_Layers, 'cls_prob')
 
 # definitions
@@ -122,86 +139,71 @@ def vis_detections(im, class_name, dets,ax, thresh=0.5):
     plt.tight_layout()
     plt.draw()
 
+def run_sess(idx, img, img_info, on_memory):
+
+    start_time = time.time()
+
+    pred_boxes, pred_prob = sess.run(
+        [Pred_BBoxes, Pred_CLS_Prob],
+        {
+            Image: [img],
+            ImageInfo: [img_info],
+            ConfigKey: 'TEST',
+        }
+    )
+    end_time = time.time()
+
+    print('Figure %2d Recognition done. - %5.2f (s)' % (idx + 1, end_time - start_time))
+
+    if on_memory: img = org_image_set['images'][idx]
+    else: img = org_image_set['images'][0]
+    img = img[:, :, (2, 1, 0)]
+    fig, ax = plt.subplots(figsize=(12, 12))
+    ax.imshow(img, aspect='equal')
+
+    for idx in range(n_classes - 1):
+        idx += 1
+        cls_boxes = pred_boxes[:, 4 * idx:4 * (idx + 1)]
+        cls_scores = pred_prob[:, idx]
+        dets = np.hstack((cls_boxes, cls_scores[:, np.newaxis])).astype(np.float32)
+        keep = nms(dets, 0.3)
+        dets = dets[keep, :]
+        vis_detections(img, get_class_name(idx - 1), dets, ax)
+
 if __name__ == '__main__':
     ConfigProto = tf.ConfigProto(allow_soft_placement=True)
     ConfigProto.gpu_options.allow_growth = True
     sess = tf.InteractiveSession(config=ConfigProto)
-    
-    tf.global_variables_initializer().run(session=sess)
+
+    if not finetune_dir:
+        tf.global_variables_initializer().run(session=sess)
+
     saver = tf.train.Saver()
-    # saver.restore(sess, 'data/model/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
-    # saver.restore(sess, './data/models/combine_test/combine_test.ckpt-30000')
+    if finetune_dir:
+        saver.restore(sess, finetune_dir)
 
     on_memory = False
     if on_memory:
-        org_image_set = next(voc_xml_parser('./data/data/sample_10/jpg/', './data/data/sample_10/xml/', on_memory=on_memory))
+        org_image_set = next(voc_xml_parser(data_dir+'jpg/', data_dir+'xml/', on_memory=on_memory))
         image_set = ImageSetExpand(org_image_set)
         boxes_set, classes_set = image_set['boxes'], np.array([[get_class_idx(cls) for cls in classes] for classes in image_set['classes']])
         image_set['ground_truth'] = [[np.concatenate((box, [cls])) for box, cls in zip(boxes, classes)] for boxes, classes in zip(boxes_set, classes_set)]
 
 
         for idx, (img, img_info) in enumerate(zip(image_set['images'], image_set['image_shape'])):
-            start_time = time.time()
-            pred_boxes, pred_prob = sess.run(
-                [Pred_BBoxes, Pred_CLS_Prob],
-                {
-                    Image: [img],
-                    ImageInfo: [img_info],
-                    ConfigKey: 'TEST',
-                }
-            )
-            end_time = time.time()
 
-            print('Figure %2d Recognition done. - %5.2f (s)' % (idx+1, end_time-start_time))
+            run_sess(idx, img, img_info, on_memory)
 
-            img = org_image_set['images'][idx]
-            img = img[:, :, (2, 1, 0)]
-            fig, ax = plt.subplots(figsize=(12, 12))
-            ax.imshow(img, aspect='equal')
-
-            for idx in range(n_classes-1):
-                idx += 1
-                cls_boxes = pred_boxes[:, 4*idx:4*(idx+1)]
-                cls_scores = pred_prob[:, idx]
-                dets = np.hstack((cls_boxes, cls_scores[:, np.newaxis])).astype(np.float32)
-                keep = nms(dets, 0.3)
-                dets = dets[keep, :]
-                vis_detections(img, get_class_name(idx-1), dets, ax)
     else:
-        for idx, org_image_set in enumerate(voc_xml_parser('./data/data/sample_500/jpg/', './data/data/sample_500/xml/', on_memory=on_memory)):
+        for idx, org_image_set in enumerate(voc_xml_parser(data_dir + 'jpg/', data_dir + 'xml/', on_memory=on_memory)):
             image_set = ImageSetExpand(org_image_set)
             boxes_set, classes_set = image_set['boxes'], np.array([[get_class_idx(cls) for cls in classes] for classes in image_set['classes']])
             image_set['ground_truth'] = [[np.concatenate((box, [cls])) for box, cls in zip(boxes, classes)] for boxes, classes in zip(boxes_set, classes_set)]
 
-            img = image_set['images']
-            img_info = image_set['image_shape']
+            img = image_set['images'][0]
+            img_info = image_set['image_shape'][0]
 
-            start_time = time.time()
-            pred_boxes, pred_prob = sess.run(
-                [Pred_BBoxes, Pred_CLS_Prob],
-                {
-                    Image: img,
-                    ImageInfo: img_info,
-                    ConfigKey: 'TEST',
-                }
-            )
-            end_time = time.time()
-
-            print('Figure %2d Recognition done. - %5.2f (s)' % (idx+1, end_time-start_time))
-
-            img = org_image_set['images'][0]
-            img = img[:, :, (2, 1, 0)]
-            fig, ax = plt.subplots(figsize=(12, 12))
-            ax.imshow(img, aspect='equal')
-
-            for idx in range(n_classes-1):
-                idx += 1
-                cls_boxes = pred_boxes[:, 4*idx:4*(idx+1)]
-                cls_scores = pred_prob[:, idx]
-                dets = np.hstack((cls_boxes, cls_scores[:, np.newaxis])).astype(np.float32)
-                keep = nms(dets, 0.3)
-                dets = dets[keep, :]
-                vis_detections(img, get_class_name(idx-1), dets, ax)
+            run_sess(idx, img, img_info, on_memory)
 
     plt.show()
 

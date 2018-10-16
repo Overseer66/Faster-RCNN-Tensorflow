@@ -1,5 +1,6 @@
 from DeepBuilder.util import safe_append
 import tensorflow as tf
+import numpy as np
 
 def avg_pool(
         input,
@@ -42,5 +43,22 @@ def identify(
         layer_collector=None
     ):
     l = input
+    safe_append(layer_collector, l, name)
+    return l
+
+
+def featuremap_select(input, percentage, name='FeaturemapSelect', layer_collector=None):
+
+    l = []
+    for input_i in input:
+        total_dim = input_i.get_shape().as_list()[-1]
+        target_dim = int(total_dim * percentage)
+        target_idxs = [i for i in range(total_dim)]
+        target_idxs = np.random.choice(target_idxs, target_dim, replace=False)
+        target_idxs = [[i] for i in target_idxs]
+        input_i_t = tf.transpose(input_i, [3,1,2,0])
+        input_i_s = tf.gather_nd(input_i_t, target_idxs)
+        l.append(tf.transpose(input_i_s, [3,1,2,0]))
+
     safe_append(layer_collector, l, name)
     return l

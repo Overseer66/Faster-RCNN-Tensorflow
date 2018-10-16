@@ -12,7 +12,7 @@ anchor_scales = CONFIG.ANCHOR_SCALES
 rpn_test = (
     {'method': util.AppendInputs, },
 
-    {'method': util.LayerSelector, 'kwargs': {'names': ['conv5_3']}},
+    {'method': util.LayerSelector, 'kwargs': {'names': ['last_conv']}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 512], 'name': 'rpn_conv/3x3'}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, len(anchor_scales)*3*4], 'padding': 'VALID', 'activation': None, 'name': 'rpn_bbox_pred'}},
 
@@ -31,7 +31,7 @@ rpn_test = (
 rpn_train = (
     {'method': util.AppendInputs, },
 
-    {'method': util.LayerSelector, 'kwargs': {'names': ['conv5_3']}},
+    {'method': util.LayerSelector, 'kwargs': {'names': ['last_conv']}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 512], 'name': 'rpn_conv/3x3'}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, len(anchor_scales)*3*4], 'padding': 'VALID', 'activation': None, 'name': 'rpn_bbox_pred'}},
 
