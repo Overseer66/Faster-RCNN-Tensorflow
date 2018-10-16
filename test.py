@@ -22,14 +22,17 @@ ImageInfo = tf.placeholder(tf.float32, [None, 3], name='image_info')
 ConfigKey = tf.placeholder(tf.string, name='config_key')
 
 # Models : VGG16, RPN, ROI
-VGG16_Builder = build.Builder(vgg16)#(vgg16)
-VGG16_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image)
+# VGG16_Builder = build.Builder(vgg16)
+# CNN_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image)
+
+Mobilenet_Builder = build.Builder(mobilenet)
+CNN_LastLayer, Mobilenet_Layers, Mobilenet_Params = Mobilenet_Builder(Image)
 
 RPN_Builder = build.Builder(rpn_test)
-RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, ConfigKey, VGG16_LastLayer], ['image_info', 'config_key', 'conv5_3']])
+RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, ConfigKey, CNN_LastLayer], ['image_info', 'config_key', 'last_conv']])
 
 ROI_Builder = build.Builder(roi_test)
-Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[ImageInfo, VGG16_LastLayer, RPN_Proposal_BBoxes], ['image_info', 'conv5_3', 'rpn_proposal_bboxes']])
+Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[ImageInfo, CNN_LastLayer, RPN_Proposal_BBoxes], ['image_info', 'last_conv', 'rpn_proposal_bboxes']])
 Pred_CLS_Prob = SearchLayer(ROI_Layers, 'cls_prob')
 
 
@@ -87,14 +90,14 @@ if __name__ == '__main__':
     ConfigProto.gpu_options.allow_growth = True
     sess = tf.InteractiveSession(config=ConfigProto)
     
-    tf.global_variables_initializer().run(session=sess)
+    # tf.global_variables_initializer().run(session=sess)
     saver = tf.train.Saver()
     # saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
-    # saver.restore(sess, './data/pretrain_model/sample.ckpt-40010')
+    saver.restore(sess, './data/mo')
 
     on_memory = False
     if on_memory:
-        org_image_set = next(voc_xml_parser('./data/jpg/', './data/xml/', on_memory=on_memory))
+        org_image_set = next(voc_xml_parser('./data/data/test/jpg/', './data/data/test/xml/', on_memory=on_memory))
         image_set = ImageSetExpand(org_image_set)
         boxes_set, classes_set = image_set['boxes'], np.array([[get_class_idx(cls) for cls in classes] for classes in image_set['classes']])
         image_set['ground_truth'] = [[np.concatenate((box, [cls])) for box, cls in zip(boxes, classes)] for boxes, classes in zip(boxes_set, classes_set)]
@@ -127,7 +130,7 @@ if __name__ == '__main__':
                 dets = dets[keep, :]
                 vis_detections(img, get_class_name(idx-1), dets, ax)
     else:
-        for idx, org_image_set in enumerate(voc_xml_parser('./data/jpg/', './data/xml/', on_memory=on_memory)):
+        for idx, org_image_set in enumerate(voc_xml_parser('./data/data/test/jpg/', './data/data/test/xml/', on_memory=on_memory)):
             image_set = ImageSetExpand(org_image_set)
             boxes_set, classes_set = image_set['boxes'], np.array([[get_class_idx(cls) for cls in classes] for classes in image_set['classes']])
             image_set['ground_truth'] = [[np.concatenate((box, [cls])) for box, cls in zip(boxes, classes)] for boxes, classes in zip(boxes_set, classes_set)]

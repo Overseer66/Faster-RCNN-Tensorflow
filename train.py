@@ -9,6 +9,7 @@ from config import config as CONFIG
 from DeepBuilder.util import SearchLayer
 from lib.util import ModifiedSmoothL1
 
+from architecture.mobilenet import *
 from architecture.vgg import *
 from architecture.inception_v2 import *
 from architecture.inception_v4 import *
@@ -44,34 +45,37 @@ ImageInfo = tf.placeholder(tf.float32, [None, 3], name='image_info')
 GroundTruth = tf.placeholder(tf.float32, [None, 5], name='ground_truth')
 ConfigKey = tf.placeholder(tf.string, name='config_key')
 
-CNN_model = 'InceptionV4'
+# CNN_model = 'InceptionV4'
 
-if CNN_model == 'VGG16':
-    VGG16_Builder = build.Builder(vgg16)
-    VGG16_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image)
+# if CNN_model == 'VGG16':
+#     VGG16_Builder = build.Builder(vgg16)
+#     VGG16_LastLayer, VGG16_Layers, VGG16_Params = VGG16_Builder(Image)
 
-    CNN_LastLayer = VGG16_LastLayer
+#     CNN_LastLayer = VGG16_LastLayer
 
-elif CNN_model == 'InceptionV2':
+# elif CNN_model == 'InceptionV2':
 
-    InceptionV2_Builder = build.Builder(InceptionV2)
-    InceptionV2_LastLayer, InceptionV2_Layers, InceptionV2_Params = InceptionV2_Builder(Image)
+#     InceptionV2_Builder = build.Builder(InceptionV2)
+#     InceptionV2_LastLayer, InceptionV2_Layers, InceptionV2_Params = InceptionV2_Builder(Image)
 
-    CNN_LastLayer = InceptionV2_LastLayer
+#     CNN_LastLayer = InceptionV2_LastLayer
 
-elif CNN_model == 'InceptionV4':
+# elif CNN_model == 'InceptionV4':
 
-    InceptionV4_Builder = build.Builder(InceptionV4)
-    InceptionV4_LastLayer, InceptionV4_Layers, InceptionV4_Params = InceptionV4_Builder(Image)
+#     InceptionV4_Builder = build.Builder(InceptionV4)
+#     InceptionV4_LastLayer, InceptionV4_Layers, InceptionV4_Params = InceptionV4_Builder(Image)
 
-    CNN_LastLayer = InceptionV4_LastLayer
+#     CNN_LastLayer = InceptionV4_LastLayer
+
+Mobilenet_Builder = build.Builder(mobilenet)
+CNN_LastLayer, Mobilenet_Layers, Mobilenet_Params = Mobilenet_Builder(Image)
 
 # Train Model
 RPN_Builder = build.Builder(rpn_train)
-RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, GroundTruth, ConfigKey, CNN_LastLayer], ['image_info', 'ground_truth', 'config_key', 'conv5_3']])
+RPN_Proposal_BBoxes, RPN_Layers, RPN_Params = RPN_Builder([[ImageInfo, GroundTruth, ConfigKey, CNN_LastLayer], ['image_info', 'ground_truth', 'config_key', 'last_conv']])
 
 ROI_Builder = build.Builder(roi_train)
-Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[CNN_LastLayer, RPN_Proposal_BBoxes, GroundTruth, ConfigKey], ['conv5_3', 'rpn_proposal_bboxes', 'ground_truth', 'config_key']])
+Pred_BBoxes, ROI_Layers, ROI_Params = ROI_Builder([[CNN_LastLayer, RPN_Proposal_BBoxes, GroundTruth, ConfigKey], ['last_conv', 'rpn_proposal_bboxes', 'ground_truth', 'config_key']])
 Pred_CLS_Prob = SearchLayer(ROI_Layers, 'cls_prob')
 
 # LOSS
@@ -167,7 +171,6 @@ def run_sess(img, img_info, gts, model_dir, model_name, save_step, end_step=None
 
 
 if __name__ == '__main__':
-
     ConfigProto = tf.ConfigProto(allow_soft_placement=True)
     ConfigProto.gpu_options.allow_growth = True
     # ConfigProto.gpu_options.per_process_gpu_memory_fraction = 1.0
