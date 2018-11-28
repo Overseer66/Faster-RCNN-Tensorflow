@@ -11,7 +11,7 @@ __C.GPU_ID = 0
 __C.ANCHOR_SCALES = [8, 16, 32]
 __C.N_CLASSES = 21
 
-__C.TARGET_SIZE = 600
+__C.TARGET_SIZE = 1000
 
 __C.TRAIN = EasyDict()
 

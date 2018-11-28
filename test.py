@@ -28,8 +28,7 @@ data_dir = FLAGS.data_dir
 finetune_dir = FLAGS.finetune_dir
 on_memory = FLAGS.on_memory
 gpu_id= FLAGS.gpu_id
-data_dir = "./data/data/sample_10/"
-finetune_dir = './data/models/pretrain_model/sample.ckpt-40010'
+data_dir = "./data/data/test/"
 
 os.environ["CUDA_VISIBLE_DEVICES"]=gpu_id
 
@@ -39,7 +38,7 @@ ImageInfo = tf.placeholder(tf.float32, [None, 3], name='image_info')
 # GroundTruth = tf.placeholder(tf.float32, [None, 5], name='ground_truth')
 ConfigKey = tf.placeholder(tf.string, name='config_key')
 
-CNN_model = 'VGG16'
+CNN_model = 'Mobilenet'
 
 if CNN_model == 'VGG16':
     VGG16_Builder = build.Builder(vgg16)
@@ -243,11 +242,13 @@ if __name__ == '__main__':
     ConfigProto.gpu_options.allow_growth = True
     sess = tf.InteractiveSession(config=ConfigProto)
 
+    saver = tf.train.Saver()
     if not finetune_dir:
         tf.global_variables_initializer().run(session=sess)
-
-    saver = tf.train.Saver()
-    # saver.restore(sess, 'data/pretrain_model/VGGnet_fast_rcnn_iter_70000.ckpt')
+    else:
+        last_checkpoint = tf.train.latest_checkpoint(finetune_dir)
+        saver.restore(sess, last_checkpoint)
+        print('load model %s' % last_checkpoint)
 
     mAP = []
     if on_memory:
@@ -275,7 +276,8 @@ if __name__ == '__main__':
             true_list = run_sess(idx, img, img_info, ground_truth, on_memory)
             mAP += true_list
 
-    print('Total mAP :', sum(mAP)/len(mAP))
+    if len(mAP) != 0:
+        print('Total mAP :', sum(mAP)/len(mAP))
 
     plt.show()
 

@@ -46,7 +46,7 @@ ImageInfo = tf.placeholder(tf.float32, [None, 3], name='image_info')
 GroundTruth = tf.placeholder(tf.float32, [None, 5], name='ground_truth')
 ConfigKey = tf.placeholder(tf.string, name='config_key')
 
-CNN_model = 'InceptionV4'
+CNN_model = 'Mobilenet'
 
 if CNN_model == 'VGG16':
     VGG16_Builder = build.Builder(vgg16)
@@ -133,8 +133,9 @@ rcnn_bbox_loss = tf.reduce_mean(tf.reduce_sum(rcnn_bbox_l1, reduction_indices=[1
 final_loss = rpn_cls_loss + rpn_bbox_loss + rcnn_cls_loss + rcnn_bbox_loss
 
 global_step = tf.Variable(0, trainable=False)
-lr = tf.train.exponential_decay(CONFIG.TRAIN.LEARNING_RATE, global_step, CONFIG.TRAIN.STEPSIZE, 0.1, staircase=True)
-train_op = tf.train.MomentumOptimizer(lr, CONFIG.TRAIN.MOMENTUM).minimize(final_loss, global_step=global_step)
+lr = tf.train.exponential_decay(CONFIG.TRAIN.LEARNING_RATE, global_step, CONFIG.TRAIN.STEPSIZE, 0.05, staircase=True)
+# lr = 1e-3
+train_op = tf.train.GradientDescentOptimizer(lr).minimize(final_loss, global_step=global_step)
 
 
 def get_class_idx(name):
@@ -195,12 +196,13 @@ if __name__ == '__main__':
     # ConfigProto.gpu_options.per_process_gpu_memory_fraction = 1.0
     sess = tf.InteractiveSession(config=ConfigProto)
 
+    saver = tf.train.Saver()
     if not finetune_dir:
         tf.global_variables_initializer().run(session=sess)
-
-    saver = tf.train.Saver()
-    if finetune_dir:
-        saver.restore(sess, finetune_dir)
+    else:
+        last_checkpoint = tf.train.latest_checkpoint(finetune_dir)
+        saver.restore(sess, last_checkpoint)
+        print('load model %s' % last_checkpoint)
 
     on_memory = False
     tot_time = time.time()
