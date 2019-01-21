@@ -26,7 +26,7 @@ tf.flags.DEFINE_string("finetune_dir", None, "Finetuned model to use. Default va
 tf.flags.DEFINE_string("model_name", "model", "Name of the model")
 tf.flags.DEFINE_integer("end_step", None, "Total step to run. Default value lets the model run forever.")
 tf.flags.DEFINE_integer("save_step", 100000, "Steps to save the model")
-tf.flags.DEFINE_string("gpu_id", "0", "ID of gpu to use, which can be multiple.")
+tf.flags.DEFINE_string("gpu_id", "1", "ID of gpu to use, which can be multiple.")
 
 FLAGS = tf.flags.FLAGS
 FLAGS._parse_flags()
@@ -133,7 +133,7 @@ rcnn_bbox_loss = tf.reduce_mean(tf.reduce_sum(rcnn_bbox_l1, reduction_indices=[1
 final_loss = rpn_cls_loss + rpn_bbox_loss + rcnn_cls_loss + rcnn_bbox_loss
 
 global_step = tf.Variable(0, trainable=False)
-lr = tf.train.exponential_decay(CONFIG.TRAIN.LEARNING_RATE, global_step, CONFIG.TRAIN.STEPSIZE, 0.05, staircase=True)
+lr = 1e-4# = tf.train.exponential_decay(CONFIG.TRAIN.LEARNING_RATE, global_step, CONFIG.TRAIN.STEPSIZE, 0.05, staircase=True)
 # lr = 1e-3
 train_op = tf.train.GradientDescentOptimizer(lr).minimize(final_loss, global_step=global_step)
 

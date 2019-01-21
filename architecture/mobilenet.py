@@ -5,6 +5,7 @@ from DeepBuilder import layer, activation, build, util
 
 mobilenet = (
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 32], 'stride_size': [1, 2, 2, 1], 'batch_norm_param': {}, 'name': 'conv1'}},
+    #{'method': layer.conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 32], 'stride_size': [1, 1, 1, 1], 'batch_norm_param': {}, 'name': 'conv1'}},
 
     {'method': layer.depthwise_conv_2d, 'kwargs': {'kernel_size': [3, 3, -1, 1], 'batch_norm_param': {}, 'name': 'dwconv1'}},
     {'method': layer.conv_2d, 'kwargs': {'kernel_size': [1, 1, -1, 64], 'batch_norm_param': {}, 'name': 'conv2'}},

@@ -28,7 +28,7 @@ data_dir = FLAGS.data_dir
 finetune_dir = FLAGS.finetune_dir
 on_memory = FLAGS.on_memory
 gpu_id= FLAGS.gpu_id
-data_dir = "./data/data/test/"
+#data_dir = "./data/data/test/"
 
 os.environ["CUDA_VISIBLE_DEVICES"]=gpu_id
 
